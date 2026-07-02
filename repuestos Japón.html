@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sistema SoluParts — Red Unificada en la Nube</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #E2E8F0; padding: 16px 8px 40px; min-height: 100vh; color: #1E293B; }
+  
+  /* CONTENEDOR EFECTO ELEVADO PREMIUM */
+  .window { width: 100%; max-width: 1080px; border-radius: 12px; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); background: #F8FAFC; margin: 0 auto; border: 1px solid #CBD5E1; position: relative; }
+  
+  /* BARRA SUPERIOR DEEP SLATE */
+  .titlebar { background: #0F172A; padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #1E293B; }
+  .titlebar-title { color: #F8FAFC; font-size: 14px; font-weight: 600; letter-spacing: 0.5px; }
+  
+  /* PESTAÑAS DISEÑO MODERNO */
+  .tabs { display: flex; background: #F1F5F9; padding: 6px 6px 0; border-bottom: 2px solid #E2E8F0; overflow-x: auto; gap: 4px; }
+  .tab { padding: 10px 16px; font-size: 11px; font-weight: 700; cursor: pointer; color: #64748B; white-space: nowrap; border-radius: 8px 8px 0 0; transition: all 0.2s ease; border: 1px solid transparent; border-bottom: none; }
+  .tab:hover { background: #E2E8F0; color: #334155; }
+  .tab.active { background: #0F172A; color: #fff; border-color: #0F172A; }
+  
+  /* Pestaña Gerencial VIP */
+  .tab.gerencial { background: #FEF3C7; color: #B45309; border: 1px solid #FDE68A; border-bottom: none; }
+  .tab.gerencial:hover { background: #FDE68A; }
+  .tab.gerencial.active { background: linear-gradient(135deg, #D97706 0%, #B45309 100%); color: #fff; border-color: #B45309; }
+  
+  .panel { display: none; background: #fff; padding: 20px; }
+  .panel.active { display: block; }
+  
+  .section-title { font-size: 14px; font-weight: 700; color: #0F172A; margin-bottom: 16px; padding-bottom: 6px; border-bottom: 2px solid #334155; display: flex; align-items: center; gap: 6px; }
+  
+  /* FORMULARIOS Y GRILLAS LIMPIAS */
+  .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 18px; }
+  .grid-tecnica { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; background: #F0FDF4; padding: 14px; border-radius: 8px; border: 1px solid #DCFCE7; margin-bottom: 16px; }
+  
+  .audit-box { background: #EFF6FF; border: 1px solid #DBEAFE; padding: 14px; border-radius: 8px; margin-bottom: 18px; }
+  
+  .field { display: flex; flex-direction: column; gap: 5px; width: 100%; }
+  .field.full { grid-column: span 2; }
+  .field label { font-size: 11px; font-weight: 700; color: #334155; text-transform: uppercase; letter-spacing: 0.3px; }
+  
+  .field input, .field select, .field textarea { padding: 9px 12px; border: 1px solid #CBD5E1; border-radius: 6px; font-size: 12px; background: #F8FAFC; color: #0F172A; width: 100%; outline: none; transition: all 0.15s ease; }
+  .field textarea { resize: none; height: 55px; }
+  .field input:focus, .field textarea:focus, .field select:focus { border-color: #3B82F6; background: #fff; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15); }
+  
+  .selector-dinamico { display: flex; gap: 8px; width: 100%; }
+  
+  /* SECCIÓN IMPORTACIÓN PLANILLA EXCEL */
+  .import-box { background: #F8FAFC; border: 2px dashed #CBD5E1; padding: 16px; border-radius: 8px; margin-bottom: 20px; text-align: center; transition: all 0.2s; }
+  .import-box:hover { border-color: #2563EB; background: #F0F9FF; }
+  .import-preview-wrap { margin-top: 14px; border: 1px solid #E2E8F0; border-radius: 6px; overflow-x: auto; max-height: 220px; display: none; }
+  
+  /* BUSQUEDAS RECIENTES */
+  .recientes-container { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; align-items: center; }
+  .btn-reciente { background: #F1F5F9; border: 1px solid #E2E8F0; padding: 5px 10px; border-radius: 6px; font-size: 10px; font-weight: 700; cursor: pointer; color: #475569; transition: all 0.15s; }
+  .btn-reciente:hover { background: #0F172A; color: white; border-color: #0F172A; }
+  
+  /* TARJETAS GERENCIALES CON SOMBRAS */
+  .dash-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+  .card-stat { padding: 14px; border-radius: 8px; border: 1px solid #E2E8F0; background: #fff; text-align: center; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03); }
+  .card-stat .num { font-size: 20px; font-weight: 800; color: #0F172A; margin-top: 4px; }
+  .card-stat .lbl { font-size: 10px; color: #64748B; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; }
+  .badge-margen { display: inline-block; padding: 5px 10px; border-radius: 6px; font-weight: 700; font-size: 11px; margin-top: 6px; text-transform: uppercase; }
+  
+  /* TABLAS MODERNAS ESTILIZADAS */
+  .table-wrap { overflow-x: auto; border: 1px solid #E2E8F0; border-radius: 8px; margin-top: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
+  table { width: 100%; border-collapse: collapse; font-size: 11px; min-width: 950px; background: #fff; }
+  thead tr { background: #0F172A; color: #fff; }
+  thead th { padding: 12px 10px; text-align: left; font-weight: 600; font-size: 11px; letter-spacing: 0.3px; }
+  tbody tr { transition: background 0.15s ease; cursor: pointer; }
+  tbody tr:nth-child(even) { background: #F8FAFC; }
+  tbody tr:hover { background: #F0F9FF; } 
+  tbody td { padding: 11px 10px; border-bottom: 1px solid #E2E8F0; color: #334155; vertical-align: middle; }
+  
+  /* BOTONES PREMIUM CON EFECTO CLICK */
+  .btn-row { display: flex; gap: 10px; margin-top: 14px; }
+  .btn { flex: 1; padding: 11px; border: none; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; text-align: center; transition: all 0.15s ease; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+  .btn:active { transform: scale(0.98); }
+  .btn-blue { background: #2563EB; color: #fff; }
+  .btn-blue:hover { background: #1D4ED8; }
+  .btn-green { background: #16A34A; color: #fff; }
+  .btn-green:hover { background: #15803D; }
+  .btn-amber { background: #D97706; color: #fff; }
+  .btn-amber:hover { background: #B45309; }
+  .btn-info { background: #06B6D4; color: #fff; }
+  .btn-info:hover { background: #0891B2; }
+  .btn-plus { background: #9333EA; padding: 0 14px; font-size: 14px; border: none; cursor: pointer; font-weight: bold; border-radius: 6px; color: white; transition: background 0.15s; }
+  .btn-plus:hover { background: #7E22CE; }
+  .btn-view { background: #0F172A; color: white; border: none; padding: 7px 12px; border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 11px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+  .btn-view:hover { background: #1E293B; }
+  
+  /* BADGES Y ETIQUETAS */
+  .badge-origen { background: #F1F5F9; padding: 3px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; color: #475569; border: 1px solid #E2E8F0; }
+  .badge-medida { background: #E0F2FE; color: #0369A1; padding: 3px 6px; border-radius: 4px; font-weight: 700; font-size: 10px; border: 1px solid #BAE6FD; }
+  .badge-vin { background: #F1F5F9; color: #475569; padding: 3px 6px; border-radius: 4px; font-weight: bold; font-size: 10px; border: 1px solid #CBD5E1; text-transform: uppercase; }
+  .badge-date { background: #F1F5F9; color: #64748B; padding: 2px 4px; border-radius: 4px; font-size: 9px; display: inline-block; margin-top: 2px; }
+  
+  /* VENTANA EMERGENTE (MODAL EXCLUSIVO) */
+  .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); display: flex; align-items: center; justify-content: center; z-index: 1000; display: none; backdrop-filter: blur(4px); }
+  .modal-card { background: #fff; width: 90%; max-width: 550px; border-radius: 12px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); border: 1px solid #E2E8F0; animation: scaleUp 0.2s ease-out; }
+  .modal-header { background: #0F172A; color: white; padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; }
+  .modal-header h3 { font-size: 14px; font-weight: 700; letter-spacing: 0.5px; }
+  .modal-close { background: none; border: none; color: #94A3B8; font-size: 20px; cursor: pointer; transition: color 0.15s; }
+  .modal-close:hover { color: #fff; }
+  .modal-body { padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+  .modal-row { display: flex; justify-content: space-between; border-bottom: 1px dashed #E2E8F0; padding-bottom: 8px; font-size: 12px; }
+  .modal-row .label { font-weight: 700; color: #64748B; text-transform: uppercase; font-size: 10px; }
+  .modal-row .value { font-weight: 600; color: #0F172A; text-align: right; }
+  .modal-tip-box { background: #FFFBEB; border: 1px solid #FDE68A; padding: 12px; border-radius: 8px; margin-top: 6px; }
+  
+  @keyframes scaleUp { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+  .status { background: #0F172A; padding: 8px 16px; font-size: 11px; color: #94A3B8; display: flex; align-items: center; gap: 6px; border-top: 1px solid #1E293B; }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #22C55E; box-shadow: 0 0 8px #22C55E; }
+  .chart-container { max-width: 360px; margin: 20px auto 10px; background: #fff; padding: 12px; border-radius: 8px; border: 1px solid #E2E8F0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+  .inject-banner { background: #16A34A; color: white; padding: 11px; text-align: center; font-size: 12px; font-weight: bold; display: none; }
+</style>
+</head>
+<body>
+
+<div class="window">
+  <div class="inject-banner" id="banner-carga">🔄 Re-inyectando base de operadores en la nube... Esperá un momento...</div>
+
+  <div class="titlebar">
+    <div class="titlebar-title">🚀 Sistema SoluParts — Red Unificada en la Nube</div>
+    <div style="color:#FFF; background:#22C55E; padding:3px 8px; font-size:10px; font-weight:bold; border-radius:4px; box-shadow: 0 0 6px rgba(34,197,94,0.4);">NUBE ACTIVA</div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('busqueda')">🔍 MOSTRADOR (BUSCADOR)</div>
+    <div class="tab" onclick="switchTab('carga')">➕ REGISTRAR / ENRIQUECER ITEM</div>
+    <div class="tab gerencial" onclick="switchTab('costos')">💰 SECCIÓN GERENCIAL (PRECIOS INTEGRADOS)</div>
+  </div>
+
+  <!-- PANEL MOSTRADOR -->
+  <div class="panel active" id="panel-busqueda">
+    <div class="field full" style="margin-bottom: 4px;">
+      <label>Buscá por OEM, Descripción, Vehículo, VIN (Chasis) o Firma:</label>
+      <input id="search-input" oninput="ejecutarFiltroMostrador()" placeholder="Escribí código, chasis o modelo para buscar en tiempo real...">
+    </div>
+    
+    <div style="margin-bottom: 12px; font-size: 10px; color:#64748B; font-weight:700;">
+      ⏱️ RECIENTES: <span class="recientes-container" id="historial-recientes"><span style="color:#94A3B8; font-weight:normal; font-style:italic;">Ninguna consulta en esta sesión.</span></span>
+    </div>
+    
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Código OEM</th>
+            <th>Descripción Básica</th>
+            <th>Ficha (A x B x C)</th>
+            <th>Vehículo Compatible</th>
+            <th>Nro. VIN / Chasis</th>
+            <th>Precio Venta</th>
+            <th>Acción</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-busqueda-body">
+          <tr><td colspan="7" style="text-align:center; padding:20px; color:#64748B;">Sincronizando base central...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- PANEL DE CARGA CON IMPORTACIÓN DE EXCEL Y PREVISUALIZACIÓN -->
+  <div class="panel" id="panel-carga">
+    
+    <!-- BLOQUE NUEVO: IMPORTAR EXCEL (OPCIÓN 2 - CONTROL TOTAL) -->
+    <div class="section-title" style="color:#2563EB; border-bottom-color:#2563EB;">📥 Importación Masiva desde Planilla Excel (Módulo de Control)</div>
+    <div class="import-box">
+      <p style="font-size: 12px; color:#475569; margin-bottom: 10px; font-weight: 600;">
+        Seleccioná un archivo .xlsx para previsualizar y enriquecer lotes enteros de repuestos en segundos.
+      </p>
+      <input type="file" id="excel-file-input" accept=".xlsx, .xls" onchange="leerExcelPrevisualizacion()" style="font-size:12px; color:#334155;">
+      
+      <!-- Contenedor dinámico de previsualización de datos leídos -->
+      <div class="import-preview-wrap" id="contenedor-previsualizacion">
+        <table style="min-width: 100%; border-radius:0;">
+          <thead style="background:#334155;">
+            <tr>
+              <th>OEM (Código)</th>
+              <th>Descripción</th>
+              <th>Vehículo</th>
+              <th>VIN / Chasis</th>
+              <th>Medidas (A x B x C)</th>
+            </tr>
+          </thead>
+          <tbody id="tabla-previsualizacion-body"></tbody>
+        </table>
+      </div>
+      
+      <div id="row-confirmar-importacion" style="display:none; margin-top: 12px; background:#EFF6FF; padding:10px; border-radius:6px; border:1px solid #BFDBFE;">
+        <span style="font-size:11px; font-weight:bold; color:#1E40AF; display:block; margin-bottom:8px;" id="txt-conteo-preview"></span>
+        <div style="display:flex; gap:8px; justify-content:center;">
+          <select id="excel-operador-firma" style="max-width:250px; padding:6px; font-size:11px; font-weight:bold; border:1px solid #3B82F6;"></select>
+          <button class="btn btn-green" style="padding:6px 16px; font-size:11px; flex:0;" onclick="confirmarYSubirExcelANube()">🚀 Confirmar y Sellar en la Nube</button>
+          <button class="btn" style="padding:6px 16px; font-size:11px; flex:0; background:#64748B; color:white;" onclick="cancelarLotePrevisualizado()">❌ Cancelar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-title" id="carga-titulo-accion">Alta Técnica de Ítem (Uso de Operadores)</div>
+    <div class="form-grid">
+      <div class="field"><label>Código OEM / Número de Pieza *</label><input id="c-oem" placeholder="Ej: HO-3025"></div>
+      <div class="field"><label>Descripción del Repuesto *</label><input id="c-desc" placeholder="Ej: PUNTERA HOMOCINETICA"></div>
+      <div class="field"><label>Vehículos / Chasis Compatibles *</label><input id="c-vehiculo" placeholder="Ej: HILUX SURF"></div>
+      
+      <div class="field"><label>Número de VIN / Chasis Relacionado</label><input id="c-vin" placeholder="Ej: KZN185-0012345 o Chasis Vía Chile"></div>
+      
+      <div class="field">
+        <label>Marca del Vehículo *</label>
+        <select id="c-marca-v">
+          <option>TOYOTA</option><option>MITSUBISHI</option><option>NISSAN</option><option>ISUZU</option><option>DAIHATSU</option><option>HYUNDAI / KIA</option>
+        </select>
+      </div>
+      <div class="field"><label>Marca del Producto / Fabricante</label><input id="c-marca-p" placeholder="Ej: GOR"></div>
+      
+      <div class="field full" style="background: #F5F3FF; padding: 12px; border-radius: 8px; border: 1px solid #DDD6FE;">
+        <label style="color: #6D28D9; font-weight: bold;">✍️ Firma del Operador (Obligatorio para Guardar/Premios):</label>
+        <div class="selector-dinamico">
+          <select id="c-operador"><option value="">Cargando operadores...</option></select>
+          <button class="btn-plus" type="button" onclick="agregarNuevoOperadorNube()">➕</button>
+        </div>
+      </div>
+
+      <div class="field full">
+        <label style="color:#B45309;">💡 Datos de Ayuda / Tips de Mostrador:</label>
+        <textarea id="c-tip" placeholder="Tips de compatibilidad o notas para el mostrador..."></textarea>
+      </div>
+    </div>
+
+    <div class="grid-tecnica">
+      <div style="grid-column: span 3; font-size: 11px; font-weight: 700; color: #15803D; letter-spacing: 0.3px;">🔬 CALIBRACIÓN TÉCNICA MILIMÉTRICA</div>
+      <div class="field"><label>Medida A</label><input type="number" step="0.01" id="m-a" value="0"></div>
+      <div class="field"><label>Medida B</label><input type="number" step="0.01" id="m-b" value="0"></div>
+      <div class="field"><label>Medida C</label><input type="number" step="0.01" id="m-c" value="0"></div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-green" onclick="guardarFichaEnNube()">💾 Grabar Registro / Guardar Cambios</button>
+      <button class="btn btn-blue" style="background:#64748B; flex:0.4;" onclick="limpiarFormularioCarga()">🔄 Limpiar</button>
+    </div>
+  </div>
+
+  <!-- PANEL GERENCIAL -->
+  <div class="panel" id="panel-costos">
+    <div class="section-title" style="color:#0F172A; border-bottom-color:#0F172A;">📊 DASHBOARD ANALÍTICO GENERAL</div>
+    
+    <div class="dash-cards">
+      <div class="card-stat">
+        <div class="lbl">📦 Total en Red</div>
+        <div class="num" id="dash-total">0</div>
+      </div>
+      <div class="card-stat" style="background:#F0FDF4; border-color:#BBF7D0;">
+        <div class="lbl" style="color:#166534;">✅ Ítems Enriquecidos</div>
+        <div class="num" id="dash-enriquecidos" style="color:#15803D;">0</div>
+      </div>
+      <div class="card-stat" style="background:#F5F3FF; border-color:#E9D5FF;">
+        <div class="lbl" style="color:#6D28D9;">🏆 Líder de Cargas</div>
+        <div class="num" id="dash-estrella" style="color:#7E22CE; font-size:12px; padding-top:6px;">Calculando...</div>
+      </div>
+    </div>
+
+    <div class="section-title" style="color:#0F172A; border-bottom-color:#0F172A;">🔑 CONTROL EXCLUSIVO: Precios y Semáforo de Margen</div>
+    
+    <div class="form-grid" style="background: #FFFBEB; padding: 16px; border-radius: 8px; border: 1px solid #FEF3C7;">
+      <div class="field"><label>Seleccionar Repuesto para Comercializar:</label><select id="costo-select-oem" onchange="cargarCostosAlFormulario()"></select></div>
+      <div class="field"><label>Proveedor Asignado / Origen</label><input id="costo-proveedor" placeholder="Ej: FROTISE, CHILE, etc."></div>
+      
+      <div class="field full" style="margin-top: 5px;">
+        <label style="color:#DC2626; font-weight:bold; font-size:12px;">💰 PRECIO DE VENTA FINAL PÚBLICO (Gs.) *</label>
+        <input type="number" id="costo-precio-venta" value="0" oninput="calcularMargenTiempoReal()" style="font-size:16px; font-weight:bold; color:#0F172A; border: 2px solid #34D399; background: #fff;">
+        <div id="analisis-margen-box" class="badge-margen" style="display:none;"></div>
+      </div>
+    </div>
+
+    <div class="grid-costos" style="margin-top: 15px; display: block; background: #F8FAFC; padding: 14px; border-radius: 8px; border: 1px solid #E2E8F0;">
+      <div style="font-size: 11px; font-weight: 700; color:#475569; letter-spacing: 0.3px; margin-bottom: 12px; text-transform: uppercase;">
+        💵 MATRICES ANALÍTICAS DE ORIGEN (VALORES EN USD)
+      </div>
+      
+      <div style="display: table; width: 100%; border-collapse: separate; border-spacing: 0 10px;">
+        <div style="display: table-row;">
+          <div style="display: table-cell; width: 50%; vertical-align: middle; padding-right: 6px;">
+            <label style="font-size: 10px; font-weight: 700; color: #334155;">🇰🇷 FOB Corea</label>
+            <input type="number" id="fob-corea" value="0" oninput="calcularMargenTiempoReal()" style="margin-top: 4px; padding: 9px 12px; border: 1px solid #CBD5E1; border-radius: 6px; font-size: 12px; width: 100%; background: #fff;">
+          </div>
+          <div style="display: table-cell; width: 50%; vertical-align: middle; padding-left: 6px;">
+            <label style="font-size: 10px; font-weight: 700; color: #334155;">🇰🇷 CIF Asu</label>
+            <input type="number" id="cif-corea" value="0" oninput="calcularMargenTiempoReal()" style="margin-top: 4px; padding: 9px 12px; border: 1px solid #CBD5E1; border-radius: 6px; font-size: 12px; width: 100%; background: #fff;">
+          </div>
+        </div>
+        
+        <div style="display: table-row;">
+          <div style="display: table-cell; width: 50%; vertical-align: middle; padding-right: 6px;">
+            <label style="font-size: 10px; font-weight: 700; color: #334155;">🇯🇵 FOB Japón</label>
+            <input type="number" id="fob-japon" value="0" oninput="calcularMargenTiempoReal()" style="margin-top: 4px; padding: 9px 12px; border: 1px solid #CBD5E1; border-radius: 6px; font-size: 12px; width: 100%; background: #fff;">
+          </div>
+          <div style="display: table-cell; width: 50%; vertical-align: middle; padding-left: 6px;">
+            <label style="font-size: 10px; font-weight: 700; color: #334155;">🇯🇵 CIF Asu</label>
+            <input type="number" id="cif-japon" value="0" oninput="calcularMargenTiempoReal()" style="margin-top: 4px; padding: 9px 12px; border: 1px solid #CBD5E1; border-radius: 6px; font-size: 12px; width: 100%; background: #fff;">
+          </div>
+        </div>
+        
+        <div style="display: table-row;">
+          <div style="display: table-cell; width: 50%; vertical-align: middle; padding-right: 6px;">
+            <label style="font-size: 10px; font-weight: 700; color: #334155;">🇨🇳 FOB China</label>
+            <input type="number" id="fob-china" value="0" oninput="calcularMargenTiempoReal()" style="margin-top: 4px; padding: 9px 12px; border: 1px solid #CBD5E1; border-radius: 6px; font-size: 12px; width: 100%; background: #fff;">
+          </div>
+          <div style="display: table-cell; width: 50%; vertical-align: middle; padding-left: 6px;">
+            <label style="font-size: 10px; font-weight: 700; color: #334155;">🇨🇳 CIF Asu</label>
+            <input type="number" id="cif-china" value="0" oninput="calcularMargenTiempoReal()" style="margin-top: 4px; padding: 9px 12px; border: 1px solid #CBD5E1; border-radius: 6px; font-size: 12px; width: 100%; background: #fff;">
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="btn-row"><button class="btn btn-amber" onclick="guardarCostosGerenciales()">🔒 Sellar Precio y Margen Comercial</button></div>
+
+    <div class="section-title" style="color:#B45309; border-bottom-color:#B45309; margin-top:25px;">📊 SECCIÓN RECOMPENSAS: Conteo Mostrador</div>
+    <div class="audit-box">
+      <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:10px; margin-bottom:12px;">
+        <div class="field"><label>Desde el:</label><input type="date" id="rep-desde" onchange="recalcularEstadisticasRango()"></div>
+        <div class="field"><label>Hasta el:</label><input type="date" id="rep-hasta" onchange="recalcularEstadisticasRango()"></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-info" onclick="generarGraficoRanking()">📊 Ver Gráfico de Rendimiento</button>
+        <button class="btn btn-blue" onclick="descargarReporteFechas()">📥 Descargar Excel de Cargas (Técnico)</button>
+      </div>
+      <div class="chart-container" id="contenedor-grafico" style="display:none;"><canvas id="graficoTortaPro"></canvas></div>
+    </div>
+
+    <!-- SECCIÓN COMPRAS E IMPORTACIONES -->
+    <div class="section-title" style="color:#166534; border-bottom-color:#166534; margin-top:25px;">🚢 COMPRAS E IMPORTACIONES</div>
+    
+    <div class="audit-box" style="background: #F0FDF4; border-color: #BBF7D0; margin-bottom: 16px;">
+      <details style="cursor: pointer;">
+        <summary style="font-size: 12px; font-weight: 700; color: #166534; list-style: none; display: flex; align-items: center; gap: 6px;">
+          ℹ️ <strong>AYUDA MEMORIA: ¿Cómo usar el Módulo de Importaciones? (Tocá acá para desplegar)</strong>
+        </summary>
+        <div style="margin-top: 12px; font-size: 11px; color: #1E293B; line-height: 1.5; border-top: 1px dashed #BBF7D0; padding-top: 10px;">
+          <p style="margin-bottom: 8px; font-weight: 600; color: #166534;">Siga estos pasos para un análisis correcto de costos:</p>
+          <ol style="margin-left: 16px; display: flex; flex-direction: column; gap: 6px;">
+            <li><strong>Paso 1 - Carga de Origen:</strong> Verifique que los repuestos tengan sus valores <strong>CIF Asu</strong> cargados arriba en dólares. El sistema detectará automáticamente el origen asignado.</li>
+            <li><strong>Paso 2 - Coeficientes:</strong> Despliegue el panel del engranaje abajo para revisar o change los porcentajes de gastos de aduana y flete interno de cada país.</li>
+            <li><strong>Paso 3 - Rango de Fechas:</strong> Seleccione los días del lote que desea auditar en los campos de abajo.</li>
+            <li><strong>Paso 4 - Exportación Gerencial:</strong> Presione el botón verde. El sistema multiplicará el CIF en dólares por la tasa (Gs. 7.600) y le aplicará el coeficiente, arrojando el <strong>Costo Real Estimado en Guaraníes</strong> directo en el Excel.</li>
+          </ol>
+        </div>
+      </details>
+    </div>
+
+    <div style="background: #F0FDF4; border: 1px solid #BBF7D0; padding: 14px; border-radius: 8px;">
+      <details style="margin-bottom: 14px; background: #fff; border: 1px solid #CBD5E1; padding: 10px; border-radius: 6px;">
+        <summary style="font-size: 11px; font-weight: 700; color: #334155; cursor: pointer;">⚙️ Configurar Gastos de Despacho y Fletes (%)</summary>
+        <div style="margin-top: 10px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+          <div class="field">
+            <label style="font-size: 9px; color:#475569;">🇰🇷 Adicional Corea</label>
+            <input type="number" id="coef-corea" value="25" style="text-align: center; padding: 6px;">
+          </div>
+          <div class="field">
+            <label style="font-size: 9px; color:#475569;">🇯🇵 Adicional Japón</label>
+            <input type="number" id="coef-japon" value="25" style="text-align: center; padding: 6px;">
+          </div>
+          <div class="field">
+            <label style="font-size: 9px; color:#475569;">🇨🇳 Adicional China</label>
+            <input type="number" id="coef-china" value="22" style="text-align: center; padding: 6px;">
+          </div>
+        </div>
+      </details>
+
+      <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:10px; margin-bottom:12px;">
+        <div class="field"><label>Importaciones Desde:</label><input type="date" id="imp-desde"></div>
+        <div class="field"><label>Importaciones Hasta:</label><input type="date" id="imp-hasta"></div>
+      </div>
+      <button class="btn btn-green" style="width:100%;" onclick="descargarReporteCostosJefe()">🚢 Exportar Planilla de Costos FOB / CIF + Real PYG</button>
+    </div>
+  </div>
+
+  <div class="status"><div class="status-dot" id="status-dot"></div><span id="status-text">Conectando...</span></div>
+</div>
+
+<!-- VENTANA EMERGENTE MODAL DETALLADO -->
+<div class="modal-overlay" id="modal-detalle-repuesto" onclick="cerrarVentanaFichaEmergente(event)">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3 id="m-popup-oem">DETALLE DEL REPUESTO</h3>
+      <button class="modal-close" onclick="ocultarModalFicha()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-row"><span class="label">Descripción Central:</span><span class="value" id="m-popup-desc">-</span></div>
+      <div class="modal-row"><span class="label">Vehículo de Aplicación:</span><span class="value" id="m-popup-vehiculo">-</span></div>
+      <div class="modal-row"><span class="label">Número de VIN / Chasis:</span><span class="value" style="color:#0F172A; font-weight:bold;" id="m-popup-vin">-</span></div>
+      <div class="modal-row"><span class="label">Línea Automotriz:</span><span class="value" id="m-popup-marca-v">-</span></div>
+      <div class="modal-row"><span class="label">Fabricante / Marca Pieza:</span><span class="value" id="m-popup-marca-p">-</span></div>
+      <div class="modal-row"><span class="label">Calibración (A x B x C):</span><span class="value" style="color:#2563EB; font-weight:bold;" id="m-popup-medidas">-</span></div>
+      <div class="modal-row"><span class="label">Precio al Público:</span><span class="value" style="color:#16A34A; font-weight:800; font-size:14px;" id="m-popup-precio">-</span></div>
+      <div class="modal-row"><span class="label">Responsable de Entrada:</span><span class="value" id="m-popup-operador">-</span></div>
+      
+      <div class="modal-tip-box">
+        <div style="font-size:10px; font-weight:700; color:#B45309; margin-bottom:4px; text-transform:uppercase;">💡 Tips Técnicos y Notas de Mostrador:</div>
+        <div id="m-popup-tip" style="font-size:11px; color:#92400E; line-height:1.4;">Sin aclaraciones adicionales registradas.</div>
+      </div>
+      
+      <div style="margin-top:8px;">
+        <button class="btn btn-blue" id="btn-modal-enriquecer" style="width:100%; display:flex; align-items:center; justify-content:center; gap:6px;">✏️ Enriquecer / Actualizar Información</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const BASE_URL = "https://sistema-repuestos-soluparts-default-rtdb.firebaseio.com/";
+const ROOT_FIREBASE_URL = BASE_URL + ".json";
+const OPERADORES_URL = BASE_URL + "operadores.json";
+const TASADO_DOLAR = 7600; 
+
+const listaOficialMuchachos = [
+  "Alan Villalba", "Andrés Núñez", "Arnaldo Ayala", "Daniel Flecha", "Diego Riquelme",
+  "Edgar Villalba", "Fernando López", "Germán Espinola", "Gustavo Insaurralde", "Héctor Ayala",
+  "Ivan Ruiz", "Iván Román", "Jorge Accardi", "Jorge Acosta", "Jose Acosta", "Juan Román",
+  "Luis Amarilla", "Luis González", "Luis Orue", "Manuel Espinola", "Nicolas Fretes",
+  "Oscar García", "Roberto Chávez", "Roy Barboza", "Silvio González", "Steven Sanchez"
+];
+
+let baseDatosCompletaCompleta = {};
+let baseDatosOperadores = [];
+let miGraficoInstancia = null;
+let búsquedasRecientes = [];
+let itemsPrevisualizadosExcel = []; // Almacén temporal de la opción 2
+
+document.addEventListener("DOMContentLoaded", inicializarTodo);
+
+async function inicializarTodo() {
+  try {
+    const resOp = await fetch(OPERADORES_URL);
+    const datosOp = await resOp.json();
+    
+    if(!datosOp || Object.keys(datosOp).length === 0) {
+      document.getElementById('banner-carga').style.display = 'block';
+      await fetch(OPERADORES_URL, { method: 'PUT', body: JSON.stringify(listaOficialMuchachos) });
+      baseDatosOperadores = listaOficialMuchachos;
+      document.getElementById('banner-carga').style.display = 'none';
+    } else {
+      baseDatosOperadores = Object.values(datosOp);
+    }
+    renderizarOperadores();
+
+    const resRoot = await fetch(ROOT_FIREBASE_URL);
+    baseDatosCompletaCompleta = await resRoot.json() || {};
+    
+    actualizarTablasYSelects();
+    calcularDashboardEstatico();
+    
+    const hoyStr = "2026-06-19";
+    document.getElementById('rep-desde').value = hoyStr;
+    document.getElementById('rep-hasta').value = hoyStr;
+    document.getElementById('imp-desde').value = hoyStr;
+    document.getElementById('imp-hasta').value = hoyStr;
+    recalcularEstadisticasRango();
+  } catch(e) {
+    document.getElementById('status-text').innerText = "Error de enlace global con Firebase.";
+    document.getElementById('status-dot').style.background = "#DC2626";
+  }
+}
+
+function renderizarOperadores() {
+  const select = document.getElementById('c-operador');
+  const selectExcel = document.getElementById('excel-operador-firma');
+  baseDatosOperadores.sort((a,b) => a.localeCompare(b));
+  
+  const optionsHtml = `<option value="">-- Firmar Lote Masivo --</option>` + baseDatosOperadores.map(n => `<option value="${n}">${n}</option>`).join('');
+  select.innerHTML = `<option value="">-- Seleccioná tu Firma --</option>` + baseDatosOperadores.map(n => `<option value="${n}">${n}</option>`).join('');
+  if (selectExcel) selectExcel.innerHTML = optionsHtml;
+}
+
+async function agregarNuevoOperadorNube() {
+  const nombre = prompt("Nombre del nuevo integrante del equipo:");
+  if(!nombre || nombre.trim() === "") return;
+  const limpio = nombre.trim();
+  if(baseDatosOperadores.includes(limpio)) return alert("Ya figura en la lista.");
+  baseDatosOperadores.push(limpio);
+  await fetch(OPERADORES_URL, { method: 'PUT', body: JSON.stringify(baseDatosOperadores) });
+  renderizarOperadores();
+  alert("¡Operador registrado exitosamente!");
+}
+
+function switchTab(id) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+  
+  const tabSeleccionada = Array.from(document.querySelectorAll('.tab')).find(t => t.innerText.includes(id.toUpperCase()) || (id==='costos' && t.innerText.includes('GERENCIAL')));
+  if(tabSeleccionada) tabSeleccionada.classList.add('active');
+}
+
+/* LÓGICA EXCLUSIVA OPCIÓN 2: LECTURA Y PREVISUALIZACIÓN DE EXCEL */
+function leerExcelPrevisualizacion() {
+  const input = document.getElementById('excel-file-input');
+  if (!input.files || input.files.length === 0) return;
+  
+  const archivo = input.files[0];
+  const lector = new FileReader();
+  
+  lector.onload = function(e) {
+    const data = new Uint8Array(e.target.result);
+    const libro = XLSX.read(data, { type: 'array' });
+    const primeraHoja = libro.Sheets[libro.SheetNames[0]];
+    const filasJson = XLSX.utils.sheet_to_json(primeraHoja);
+    
+    if (filasJson.length === 0) {
+      alert("La planilla está vacía.");
+      return;
+    }
+
+    itemsPrevisualizadosExcel = [];
+    
+    // Normalizar las propiedades buscando variaciones comunes en las cabeceras
+    filasJson.forEach(fila => {
+      const oem = (fila["OEM"] || fila["CODIGO"] || fila["Codigo"] || fila["oem"] || "").toString().toUpperCase().trim().replace(/[\.\#\$\[\]\/]/g, "-");
+      const desc = (fila["DESCRIPCION"] || fila["Descripcion"] || fila["REPUESTO"] || fila["desc"] || "").toString().toUpperCase().trim();
+      const veh = (fila["VEHICULO"] || fila["Vehiculo"] || fila["COMPATIBLE"] || "").toString().toUpperCase().trim();
+      const vin = (fila["VIN"] || fila["CHASIS"] || fila["Chasis"] || fila["vin"] || "-").toString().toUpperCase().trim();
+      
+      const mA = parseFloat(fila["MEDIDA A"] || fila["A"] || fila["medida_a"]) || 0;
+      const mB = parseFloat(fila["MEDIDA B"] || fila["B"] || fila["medida_b"]) || 0;
+      const mC = parseFloat(fila["MEDIDA C"] || fila["C"] || fila["medida_c"]) || 0;
+      const tip = (fila["TIPS"] || fila["NOTAS"] || fila["AYUDA"] || "").toString().trim();
+
+      if (oem && desc) {
+        itemsPrevisualizadosExcel.push({
+          codigo_oem: oem, descripcion: desc, vehículo: veh !== "" ? veh : "VERIFICAR COMPATIBILIDAD",
+          vin: vin, medidas: { a: mA, b: mB, c: mC }, tip: tip !== "" ? tip : "Cargado por lote masivo"
+        });
+      }
+    });
+
+    if (itemsPrevisualizadosExcel.length === 0) {
+      alert("No se encontraron filas válidas con columnas de OEM/CÓDIGO y DESCRIPCIÓN.");
+      return;
+    }
+
+    // Renderizar la tabla temporal de control en pantalla
+    const tbody = document.getElementById('tabla-previsualizacion-body');
+    tbody.innerHTML = itemsPrevisualizadosExcel.slice(0, 15).map(it => `
+      <tr>
+        <td><strong>${it.codigo_oem}</strong></td>
+        <td>${it.descripcion}</td>
+        <td>${it.vehículo}</td>
+        <td><span class="badge-vin">${it.vin}</span></td>
+        <td><span class="badge-medida">${it.medidas.a} x ${it.medidas.b} x ${it.medidas.c}</span></td>
+      </tr>
+    `).join('') + (itemsPrevisualizadosExcel.length > 15 ? `<tr><td colspan="5" style="text-align:center; color:#2563EB; font-weight:bold;">... y otros ${itemsPrevisualizadosExcel.length - 15} repuestos más en la planilla ...</td></tr>` : '');
+
+    document.getElementById('contenedor-previsualizacion').style.display = "block";
+    document.getElementById('txt-conteo-preview').innerText = `📋 Planilla leída correctamente: Se detectaron ${itemsPrevisualizadosExcel.length} ítems listos para inyectar.`;
+    document.getElementById('row-confirmar-importacion').style.display = "block";
+  };
+  
+  lector.readAsArrayBuffer(archivo);
+}
+
+function cancelarLotePrevisualizado() {
+  itemsPrevisualizadosExcel = [];
+  document.getElementById('excel-file-input').value = "";
+  document.getElementById('contenedor-previsualizacion').style.display = "none";
+  document.getElementById('row-confirmar-importacion').style.display = "none";
+}
+
+async function confirmarYSubirExcelANube() {
+  const operadorFirma = document.getElementById('excel-operador-firma').value;
+  if (!operadorFirma) return alert("Por favor, seleccioná quién está validando y firmando este lote de importación masiva.");
+  
+  if (!confirm(`¿Estás seguro de subir estos ${itemsPrevisualizadosExcel.length} repuestos a la base central bajo la firma de ${operadorFirma}?`)) return;
+
+  document.getElementById('status-text').innerText = "Inyectando lote masivo en la red central...";
+  document.getElementById('status-dot').style.background = "#D97706";
+
+  for (let i = 0; i < itemsPrevisualizadosExcel.length; i++) {
+    const item = itemsPrevisualizadosExcel[i];
+    
+    // Preservar valores de costos y precios ya existentes si el repuesto ya existía
+    let original = {};
+    if (baseDatosCompletaCompleta.repuestos && baseDatosCompletaCompleta.repuestos[item.codigo_oem]) {
+      original = baseDatosCompletaCompleta.repuestos[item.codigo_oem];
+    } else if (baseDatosCompletaCompleta[item.codigo_oem]) {
+      original = baseDatosCompletaCompleta[item.codigo_oem];
+    }
+
+    const precioExistente = original.venta || 0;
+    const provExistente = original.proveedor || "S/D";
+    const costosExistentes = original.costos || { corea:{fob:0,cif:0}, japon:{fob:0,cif:0}, china:{fob:0,cif:0} };
+
+    const R_URL = BASE_URL + "repuestos/" + item.codigo_oem + ".json";
+    const obj = {
+      ...item,
+      marca_vehiculo: "GENERAL",
+      marca_proveedor: "S/D",
+      venta: precioExistente,
+      operador: operadorFirma,
+      fecha_registro: "2026-06-19",
+      proveedor: provExistente,
+      costos: costosExistentes
+    };
+
+    // Si existía un nodo huérfano viejo fuera de 'repuestos/', limpiarlo
+    if (baseDatosCompletaCompleta[item.codigo_oem] && item.codigo_oem !== "repuestos" && item.codigo_oem !== "operadores") {
+      await fetch(BASE_URL + item.codigo_oem + ".json", { method: 'DELETE' });
+    }
+
+    await fetch(R_URL, { method: 'PUT', body: JSON.stringify(obj) });
+  }
+
+  alert(`🚀 Lote procesado con éxito: Se enriquecieron y crearon ${itemsPrevisualizadosExcel.length} repuestos en la nube.`);
+  cancelarLotePrevisualizado();
+  location.reload();
+}
+
+function calcularDashboardEstatico() {
+  const items = window.listaNormalizadaRepuestos || [];
+  document.getElementById('dash-total').innerText = items.length;
+  
+  const enriquecidos = items.filter(r => {
+    return r.medidas && (r.medidas.a > 0 || r.medidas.b > 0 || r.medidas.c > 0);
+  });
+  document.getElementById('dash-enriquecidos').innerText = enriquecidos.length;
+}
+
+function recalcularEstadisticasRango() {
+  const desde = document.getElementById('rep-desde').value;
+  const hasta = document.getElementById('rep-hasta').value;
+  const items = window.listaNormalizadaRepuestos || [];
+  
+  const conteo = {};
+  items.forEach(r => {
+    if(r.fecha_registro >= desde && r.fecha_registro <= hasta) {
+      const op = r.operador || "Sistema Automático";
+      if(op !== "Sistema Automático") {
+        conteo[op] = (conteo[op] || 0) + 1;
+      }
+    }
+  });
+
+  let maxCargas = 0;
+  let ganador = "Ninguno";
+  Object.keys(conteo).forEach(op => {
+    if(conteo[op] > maxCargas) {
+      maxCargas = conteo[op];
+      ganador = `${op} (${maxCargas})`;
+    }
+  });
+  document.getElementById('dash-estrella').innerText = ganador;
+}
+
+function actualizarTablasYSelects() {
+  const tbody = document.getElementById('tabla-busqueda-body');
+  let items = [];
+
+  if (baseDatosCompletaCompleta && typeof baseDatosCompletaCompleta === 'object') {
+    if (baseDatosCompletaCompleta.repuestos && typeof baseDatosCompletaCompleta.repuestos === 'object') {
+      Object.keys(baseDatosCompletaCompleta.repuestos).forEach(clave => {
+        let elemento = baseDatosCompletaCompleta.repuestos[clave];
+        if (elemento && typeof elemento === 'object') {
+          elemento.codigo_oem = elemento.codigo_oem || clave;
+          items.push(elemento);
+        }
+      });
+    }
+
+    Object.keys(baseDatosCompletaCompleta).forEach(clave => {
+      if (clave !== "repuestos" && clave !== "operadores" && clave !== "usuarios") {
+        let elemento = baseDatosCompletaCompleta[clave];
+        if (elemento && typeof elemento === 'object') {
+          let itemMapeado = { ...elemento };
+          itemMapeado.codigo_oem = itemMapeado.codigo_oem || itemMapeado.oem || itemMapeado.codigo || clave;
+          itemMapeado.descripcion = itemMapeado.descripcion || itemMapeado.desc || "REPUESTO IMPORTADO";
+          itemMapeado.vehículo = itemMapeado.vehículo || itemMapeado.vehiculo || "VERIFICAR COMPATIBILIDAD";
+          itemMapeado.vin = itemMapeado.vin || "-";
+          itemMapeado.marca_vehiculo = itemMapeado.marca_vehiculo || itemMapeado.marca || "GENERAL";
+          itemMapeado.operador = itemMapeado.operador || "Sistema Automático";
+          itemMapeado.venta = itemMapeado.venta || itemMapeado.precio || 0;
+          itemMapeado.fecha_registro = itemMapeado.fecha_registro || "2026-06-19";
+          itemMapeado.medidas = itemMapeado.medidas || { a: 0, b: 0, c: 0 };
+          items.push(itemMapeado);
+        } 
+      }
+    });
+  }
+
+  if(items.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:20px; color:#64748B;">No se detectaron repuestos en la red.</td></tr>`;
+    return;
+  }
+
+  const mapaUnicos = {};
+  items.forEach(it => { mapaUnicos[it.codigo_oem] = it; });
+  const listaLimpia = Object.values(mapaUnicos);
+
+  window.listaNormalizadaRepuestos = listaLimpia;
+  document.getElementById('status-text').innerText = `Sincronizado. Total: ${listaLimpia.length} repuestos.`;
+
+  renderizarFilasMostrador(listaLimpia);
+
+  const select = document.getElementById('costo-select-oem');
+  if(select) {
+    const itemsOrdenados = [...listaLimpia].sort((a,b) => (a.codigo_oem || "").localeCompare(b.codigo_oem || ""));
+    select.innerHTML = `<option value="">-- Seleccionar OEM --</option>` + itemsOrdenados.map(r => `<option value="${r.codigo_oem}">${r.codigo_oem} - ${r.descripcion.substring(0,25)}...</option>`).join('');
+  }
+}
+
+function renderizarFilasMostrador(lista) {
+  const tbody = document.getElementById('tabla-busqueda-body');
+  tbody.innerHTML = lista.map(r => {
+    const oemSeguro = r.codigo_oem.replace(/'/g, "\\'");
+    return `
+      <tr onclick="lanzarVentanaEmergenteFicha('${oemSeguro}')">
+        <td><strong>${r.codigo_oem || 'S/C'}</strong><br><span class="badge-date">📅 ${r.fecha_registro}</span></td>
+        <td><strong>${r.descripcion}</strong></td>
+        <td><span class="badge-medida">${r.medidas?.a || 0} x ${r.medidas?.b || 0} x ${r.medidas?.c || 0}</span></td>
+        <td>${r.vehículo}</td>
+        <td><span class="badge-vin">${r.vin || '-'}</span></td>
+        <td style="color:#0F172A; font-weight:bold; font-size:12px;">${r.venta && r.venta > 0 ? `Gs. ${parseInt(r.venta).toLocaleString('es-PY')}` : `<span style="color:#DC2626; font-style:italic;">Consultar Jefe</span>`}</td>
+        <td>
+          <button class="btn-view" onclick="event.stopPropagation(); lanzarVentanaEmergenteFicha('${oemSeguro}')">👁️ Ver Ficha</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function ejecutarFiltroMostrador() {
+  const q = document.getElementById('search-input').value.toLowerCase().trim();
+  const items = window.listaNormalizadaRepuestos || [];
+  
+  const filtrados = items.filter(r => {
+    const oem = (r.codigo_oem || "").toString().toLowerCase();
+    const desc = (r.descripcion || "").toString().toLowerCase();
+    const veh = (r.vehículo || "").toString().toLowerCase();
+    const vin = (r.vin || "").toString().toLowerCase();
+    return oem.includes(q) || desc.includes(q) || veh.includes(q) || vin.includes(q);
+  });
+  
+  if (q.length >= 3) {
+    const coincidenciaExacta = items.find(it => it.codigo_oem.toLowerCase() === q);
+    if (coincidenciaExacta) registrarBúsquedaReciente(coincidenciaExacta.codigo_oem);
+  }
+
+  renderizarFilasMostrador(filtrados);
+}
+
+function lanzarVentanaEmergenteFicha(oem) {
+  const items = window.listaNormalizadaRepuestos || [];
+  const r = items.find(it => it.codigo_oem === oem);
+  if(!r) return;
+
+  document.getElementById('m-popup-oem').innerText = `🔎 FICHA TÉCNICA CENTRAL: ${r.codigo_oem}`;
+  document.getElementById('m-popup-desc').innerText = r.descripcion || '-';
+  document.getElementById('m-popup-vehiculo').innerText = r.vehículo || '-';
+  document.getElementById('m-popup-vin').innerText = r.vin || '-';
+  document.getElementById('m-popup-marca-v').innerText = r.marca_vehiculo || 'GENERAL';
+  document.getElementById('m-popup-marca-p').innerText = r.marca_proveedor || 'S/D';
+  document.getElementById('m-popup-medidas').innerText = `${r.medidas?.a || 0} mm × ${r.medidas?.b || 0} mm × ${r.medidas?.c || 0} mm`;
+  document.getElementById('m-popup-operador').innerText = r.operador || 'Sistema Automático';
+  
+  if (r.venta && r.venta > 0) {
+    document.getElementById('m-popup-precio').innerText = `Gs. ${parseInt(r.venta).toLocaleString('es-PY')}`;
+  } else {
+    document.getElementById('m-popup-precio').innerText = 'Consultar con Administración';
+  }
+
+  if (r.tip && r.tip.trim() !== "" && !r.tip.includes("lote masivo")) {
+    document.getElementById('m-popup-tip').innerText = r.tip;
+  } else {
+    document.getElementById('m-popup-tip').innerText = "Sin especificaciones de mostrador. ¡Podés enriquecer este ítem ahora!";
+  }
+
+  const btnEnriquece = document.getElementById('btn-modal-enriquecer');
+  btnEnriquece.onclick = function() {
+    ocultarModalFicha();
+    prepararEdicion(oem);
+  };
+
+  document.getElementById('modal-detalle-repuesto').style.display = 'flex';
+}
+
+function ocultarModalFicha() {
+  document.getElementById('modal-detalle-repuesto').style.display = 'none';
+}
+
+function cerrarVentanaFichaEmergente(event) {
+  if (event.target.id === 'modal-detalle-repuesto') ocultarModalFicha();
+}
+
+function registrarBúsquedaReciente(oem) {
+  if (búsquedasRecientes.includes(oem)) return;
+  búsquedasRecientes.unshift(oem); 
+  if (búsquedasRecientes.length > 5) búsquedasRecientes.pop(); 
+  
+  const contenedor = document.getElementById('historial-recientes');
+  contenedor.innerHTML = búsquedasRecientes.map(o => `
+    <button class="btn-reciente" onclick="inyectarFiltroReciente('${o}')">⏱️ ${o}</button>
+  `).join('');
+}
+
+function inyectarFiltroReciente(oem) {
+  document.getElementById('search-input').value = oem;
+  ejecutarFiltroMostrador();
+}
+
+function calcularMargenTiempoReal() {
+  const precioVentaGs = parseFloat(document.getElementById('costo-precio-venta').value) || 0;
+  const cifCorea = parseFloat(document.getElementById('cif-corea').value) || 0;
+  const cifJapon = parseFloat(document.getElementById('cif-japon').value) || 0;
+  const cifChina = parseFloat(document.getElementById('cif-china').value) || 0;
+  const maxCifUsd = Math.max(cifCorea, cifJapon, cifChina);
+  
+  const box = document.getElementById('analisis-margen-box');
+  if (precioVentaGs === 0 || maxCifUsd === 0) {
+    box.style.display = "none";
+    return;
+  }
+  
+  const costoTotalGs = maxCifUsd * TASADO_DOLAR;
+  const gananciaGs = precioVentaGs - costoTotalGs;
+  const porcentajeMargen = (gananciaGs / precioVentaGs) * 100;
+  
+  box.style.display = "inline-block";
+  box.innerText = `Margen Comercial Est.: ${porcentajeMargen.toFixed(1)}% (Costo: Gs. ${parseInt(costoTotalGs).toLocaleString('es-PY')})`;
+  
+  if (porcentajeMargen < 30) {
+    box.style.background = "#FEE2E2"; box.style.color = "#991B1B"; box.style.border = "1px solid #FCA5A5";
+  } else {
+    box.style.background = "#DCFCE7"; box.style.color = "#166534"; box.style.border = "1px solid #BBF7D0";
+  }
+}
+
+function prepararEdicion(oem) {
+  const items = window.listaNormalizadaRepuestos || [];
+  const r = items.find(it => it.codigo_oem === oem);
+  if(!r) return alert("No se encontraron los datos del repuesto.");
+
+  document.getElementById('carga-titulo-accion').innerText = `✏️ Enriquecer / Modificar Ítem: ${oem}`;
+  document.getElementById('c-oem').value = r.codigo_oem || '';
+  document.getElementById('c-desc').value = r.descripcion || '';
+  document.getElementById('c-vehiculo').value = r.vehículo || '';
+  document.getElementById('c-vin').value = r.vin !== "-" ? r.vin : '';
+  document.getElementById('c-marca-p').value = r.marca_proveedor || '';
+  document.getElementById('c-tip').value = r.tip && !r.tip.includes("lote masivo") ? r.tip : '';
+  document.getElementById('m-a').value = r.medidas?.a || 0;
+  document.getElementById('m-b').value = r.medidas?.b || 0;
+  document.getElementById('m-c').value = r.medidas?.c || 0;
+
+  const selectMarca = document.getElementById('c-marca-v');
+  if(r.marca_vehiculo) {
+    const marcaBuscada = r.marca_vehiculo.toUpperCase().trim();
+    let encontrada = false;
+    for(let i=0; i < selectMarca.options.length; i++) {
+      if(selectMarca.options[i].text === marcaBuscada) { selectMarca.selectedIndex = i; encontrada = true; break; }
+    }
+    if(!encontrada) {
+      const opt = document.createElement('option'); opt.text = marcaBuscada; selectMarca.add(opt); selectMarca.selectedIndex = selectMarca.options.length - 1;
+    }
+  }
+
+  switchTab('carga');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function limpiarFormularioCarga() {
+  document.getElementById('carga-titulo-accion').innerText = "Alta Técnica de Ítem (Uso de Operadores)";
+  document.getElementById('c-oem').value = '';
+  document.getElementById('c-desc').value = '';
+  document.getElementById('c-vehiculo').value = '';
+  document.getElementById('c-vin').value = '';
+  document.getElementById('c-marca-p').value = '';
+  document.getElementById('c-tip').value = '';
+  document.getElementById('m-a').value = 0;
+  document.getElementById('m-b').value = 0;
+  document.getElementById('m-c').value = 0;
+  document.getElementById('c-operador').selectedIndex = 0;
+  document.getElementById('c-marca-v').selectedIndex = 0;
+}
+
+async function guardarFichaEnNube() {
+  const oem = document.getElementById('c-oem').value.toUpperCase().trim().replace(/[\.\#\$\[\]\/]/g, "-");
+  const desc = document.getElementById('c-desc').value.toUpperCase().trim();
+  const veh = document.getElementById('c-vehiculo').value.toUpperCase().trim();
+  const vin = document.getElementById('c-vin').value.toUpperCase().trim() || "-";
+  const marcaV = document.getElementById('c-marca-v').value;
+  const marcaP = document.getElementById('c-marca-p').value.toUpperCase().trim();
+  const operador = document.getElementById('c-operador').value;
+  const tip = document.getElementById('c-tip').value.trim();
+
+  if(!oem || !desc || !veh || !operador) return alert("Por favor, completá los campos obligatorios (*) y firmá con tu nombre.");
+
+  let original = {};
+  if (baseDatosCompletaCompleta.repuestos && baseDatosCompletaCompleta.repuestos[oem]) {
+    original = baseDatosCompletaCompleta.repuestos[oem];
+  } else if (baseDatosCompletaCompleta[oem]) {
+    original = baseDatosCompletaCompleta[oem];
+  }
+
+  const precioExistente = original.venta || 0;
+  const provExistente = original.proveedor || "";
+  const costosExistentes = original.costos || { corea:{fob:0,cif:0}, japon:{fob:0,cif:0}, china:{fob:0,cif:0} };
+
+  const R_URL = BASE_URL + "repuestos/" + oem + ".json";
+  const obj = {
+    codigo_oem: oem, descripcion: desc, vehículo: veh, vin: vin, marca_vehiculo: marcaV, marca_proveedor: marcaP,
+    venta: precioExistente, operador: operador, tip: tip, fecha_registro: "2026-06-19",
+    medidas: { a: parseFloat(document.getElementById('m-a').value)||0, b: parseFloat(document.getElementById('m-b').value)||0, c: parseFloat(document.getElementById('m-c').value)||0 },
+    proveedor: provExistente, costos: costosExistentes
+  };
+
+  if (baseDatosCompletaCompleta[oem] && oem !== "repuestos" && oem !== "operadores") {
+    await fetch(BASE_URL + oem + ".json", { method: 'DELETE' });
+  }
+
+  await fetch(R_URL, { method: 'PUT', body: JSON.stringify(obj) });
+  alert(`¡Ítem ${oem} procesado con éxito en la nube!`);
+  location.reload();
+}
+
+async function guardarCostosGerenciales() {
+  const oem = document.getElementById('costo-select-oem').value;
+  if(!oem) return alert("Seleccioná un repuesto válido.");
+  
+  const R_URL = BASE_URL + "repuestos/" + oem + ".json";
+  const original = (baseDatosCompletaCompleta.repuestos && baseDatosCompletaCompleta.repuestos[oem]) ? baseDatosCompletaCompleta.repuestos[oem] : (baseDatosCompletaCompleta[oem] || {});
+
+  const obj = {
+    ...original,
+    codigo_oem: oem,
+    proveedor: document.getElementById('costo-proveedor').value.toUpperCase().trim(),
+    venta: parseFloat(document.getElementById('costo-precio-venta').value) || 0,
+    costos: {
+      corea: { fob: parseFloat(document.getElementById('fob-corea').value)||0, cif: parseFloat(document.getElementById('cif-corea').value)||0 },
+      japon: { fob: parseFloat(document.getElementById('fob-japon').value)||0, cif: parseFloat(document.getElementById('cif-japon').value)||0 },
+      china: { fob: parseFloat(document.getElementById('fob-china').value)||0, cif: parseFloat(document.getElementById('cif-china').value)||0 }
+    }
+  };
+
+  await fetch(R_URL, { method: 'PUT', body: JSON.stringify(obj) });
+  alert("¡Precios y matrices selladas!");
+  location.reload();
+}
+
+function cargarCostosAlFormulario() {
+  const oem = document.getElementById('costo-select-oem').value;
+  const items = window.listaNormalizadaRepuestos || [];
+  const r = items.find(it => it.codigo_oem === oem);
+  if(!r) return;
+  document.getElementById('costo-proveedor').value = r.proveedor || "";
+  document.getElementById('costo-precio-venta').value = r.venta || 0;
+  document.getElementById('fob-corea').value = r.costos?.corea?.fob || 0;
+  document.getElementById('cif-corea').value = r.costos?.corea?.cif || 0;
+  document.getElementById('fob-japon').value = r.costos?.japon?.fob || 0;
+  document.getElementById('cif-japon').value = r.costos?.japon?.cif || 0;
+  document.getElementById('fob-china').value = r.costos?.china?.fob || 0;
+  document.getElementById('cif-china').value = r.costos?.china?.cif || 0;
+  calcularMargenTiempoReal();
+}
+
+function descargarReporteFechas() {
+  const desde = document.getElementById('rep-desde').value;
+  const hasta = document.getElementById('rep-hasta').value;
+  if(!desde || !hasta) return alert("Elegí el rango de fechas.");
+  
+  const items = window.listaNormalizadaRepuestos || [];
+  const filtrados = items.filter(r => r.fecha_registro >= desde && r.fecha_registro <= hasta);
+  if(filtrados.length === 0) return alert("No hay datos en este rango.");
+
+  const datosEstructurados = filtrados.map(r => {
+    const med = r.medidas ? `${r.medidas.a || 0}x${r.medidas.b || 0}x${r.medidas.c || 0}` : "0x0x0";
+    return {
+      "OEM (Código)": r.codigo_oem || "S/C",
+      "Descripción": r.descripcion,
+      "Marca": r.marca_vehiculo,
+      "Vehículo": r.vehículo,
+      "Nro. VIN / Chasis": r.vin || "-",
+      "Medidas / Tips Técnicos": r.tip ? `${med} / ${r.tip}` : med,
+      "Venta": r.venta && r.venta > 0 ? `Gs. ${parseInt(r.venta).toLocaleString('es-PY')}` : "Consultar Jefe",
+      "Firma (Cargado por)": r.operador
+    };
+  });
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.json_to_sheet(datosEstructurados);
+  XLSX.utils.book_append_sheet(wb, ws, "Historial Técnico");
+  XLSX.writeFile(wb, `Reporte_Stock_SoluParts.xlsx`);
+}
+
+function descargarReporteCostosJefe() {
+  const desde = document.getElementById('imp-desde').value;
+  const hasta = document.getElementById('imp-hasta').value;
+  if(!desde || !hasta) return alert("Elija el rango de fechas.");
+  
+  const coefCorea = 1 + (parseFloat(document.getElementById('coef-corea').value) || 0) / 100;
+  const coefJapon = 1 + (parseFloat(document.getElementById('coef-japon').value) || 0) / 100;
+  const coefChina = 1 + (parseFloat(document.getElementById('coef-china').value) || 0) / 100;
+  
+  const items = window.listaNormalizadaRepuestos || [];
+  const filtrados = items.filter(r => r.fecha_registro >= desde && r.fecha_registro <= hasta);
+  if(filtrados.length === 0) return alert("No se encontraron registros.");
+
+  const planillaGerencial = filtrados.map(r => {
+    const cifCoreaUsd = r.costos?.corea?.cif || 0;
+    const cifJaponUsd = r.costos?.japon?.cif || 0;
+    const cifChinaUsd = r.costos?.china?.cif || 0;
+    
+    let costoRealEstimadoPYG = 0;
+    if (cifCoreaUsd > 0) costoRealEstimadoPYG = cifCoreaUsd * TASADO_DOLAR * coefCorea;
+    else if (cifJaponUsd > 0) costoRealEstimadoPYG = cifJaponUsd * TASADO_DOLAR * coefJapon;
+    else if (cifChinaUsd > 0) costoRealEstimadoPYG = cifChinaUsd * TASADO_DOLAR * coefChina;
+
+    return {
+      "OEM / Código": r.codigo_oem,
+      "Descripción": r.descripcion,
+      "Nro. VIN / Chasis": r.vin || "-",
+      "Proveedor Principal": r.proveedor || "S/D",
+      "Precio Venta Público (Gs.)": r.venta || 0,
+      "FOB Corea (USD)": r.costos?.corea?.fob || 0,
+      "CIF Asunción (Corea USD)": cifCoreaUsd,
+      "FOB Japón (USD)": r.costos?.japon?.fob || 0,
+      "CIF Asunción (Japón USD)": cifJaponUsd,
+      "FOB China (USD)": r.costos?.china?.fob || 0,
+      "CIF Asunción (China USD)": cifChinaUsd,
+      "COSTO REAL EST. (Guaraníes)": Math.round(costoRealEstimadoPYG)
+    };
+  });
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.json_to_sheet(planillaGerencial);
+  XLSX.utils.book_append_sheet(wb, ws, "Costos e Importaciones");
+  XLSX.writeFile(wb, `Reporte_Costos_Importacion_SoluParts.xlsx`);
+}
+
+function generarGraficoRanking() {
+  const desde = document.getElementById('rep-desde').value;
+  const hasta = document.getElementById('rep-hasta').value;
+  if(!desde || !hasta) return alert("Elegí el rango de fechas.");
+  const conteo = {};
+  
+  const items = window.listaNormalizadaRepuestos || [];
+  items.forEach(r => {
+    if(r.fecha_registro >= desde && r.fecha_registro <= hasta) {
+      const op = r.operador || "Sistema Automático";
+      conteo[op] = (conteo[op] || 0) + 1;
+    }
+  });
+  
+  const labels = Object.keys(conteo);
+  if(labels.length === 0) return alert("No hay registros en este rango.");
+  document.getElementById('contenedor-grafico').style.display = "block";
+  if(miGraficoInstancia) miGraficoInstancia.destroy();
+  miGraficoInstancia = new Chart(document.getElementById('graficoTortaPro').getContext('2d'), {
+    type: 'pie',
+    data: { labels: labels, datasets: [{ data: Object.values(conteo), backgroundColor: ['#2563EB','#16A34A','#D97706','#06B6D4','#9333EA'] }] }
+  });
+}
+</script>
+</body>
+</html>
