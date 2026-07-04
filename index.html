@@ -521,25 +521,37 @@ function leerExcelPrevisualizacion() {
     itemsPrevisualizadosExcel = [];
     
     // Normalizar las propiedades buscando variaciones comunes en las cabeceras
-    filasJson.forEach(fila => {
-      const oem = (fila["OEM"] || fila["CODIGO"] || fila["Codigo"] || fila["oem"] || "").toString().toUpperCase().trim().replace(/[\.\#\$\[\]\/]/g, "-");
-      const desc = (fila["DESCRIPCION"] || fila["Descripcion"] || fila["REPUESTO"] || fila["desc"] || "").toString().toUpperCase().trim();
-      const veh = (fila["VEHICULO"] || fila["Vehiculo"] || fila["COMPATIBLE"] || "").toString().toUpperCase().trim();
-      const vin = (fila["VIN"] || fila["CHASIS"] || fila["Chasis"] || fila["vin"] || "-").toString().toUpperCase().trim();
-      
-      const mA = parseFloat(fila["MEDIDA A"] || fila["A"] || fila["medida_a"]) || 0;
-      const mB = parseFloat(fila["MEDIDA B"] || fila["B"] || fila["medida_b"]) || 0;
-      const mC = parseFloat(fila["MEDIDA C"] || fila["C"] || fila["medida_c"]) || 0;
-      const tip = (fila["TIPS"] || fila["NOTAS"] || fila["AYUDA"] || "").toString().trim();
-
-      if (oem && desc) {
-        itemsPrevisualizadosExcel.push({
-          codigo_oem: oem, descripcion: desc, vehículo: veh !== "" ? veh : "VERIFICAR COMPATIBILIDAD",
-          vin: vin, medidas: { a: mA, b: mB, c: mC }, tip: tip !== "" ? tip : "Cargado por lote masivo"
+filasJson.forEach(fila => {
+    // Función interna para buscar columnas sin importar tildes, mayúsculas o espacios
+    const obtenerValor = (clavesPosibles) => {
+        const claveEncontrada = Object.keys(fila).find(k => {
+            const normalizada = k.trim().toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            return clavesPosibles.some(cp => normalizada === cp.trim().toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""));
         });
-      }
-    });
+        return claveEncontrada ? fila[claveEncontrada] : null;
+    };
 
+    const oem = obtenerValor(["OEM", "CODIGO", "OEM/CODIGO"]) || "";
+    const desc = obtenerValor(["DESCRIPCION", "REPUESTO", "DETALLE"]) || "";
+    const veh = obtenerValor(["VEHICULO", "COMPATIBLE"]) || "";
+    const vin = obtenerValor(["VIN", "CHASIS"]) || "";
+
+    const mA = parseFloat(obtenerValor(["MEDIDA A", "A", "MEDIDA_A"])) || 0;
+    const mB = parseFloat(obtenerValor(["MEDIDA B", "B", "MEDIDA_B"])) || 0;
+    const mC = parseFloat(obtenerValor(["MEDIDA C", "C", "MEDIDA_C"])) || 0;
+    const tip = (obtenerValor(["TIPS", "NOTAS", "AYUDA"]) || "").toString().trim();
+
+    if (oem && desc) {
+        itemsPrevisualizadosExcel.push({
+            codigo_oem: oem,
+            descripcion: desc,
+            vehículo: veh !== "" ? veh : "VERIFICAR",
+            vin: vin,
+            medidas: { a: mA, b: mB, c: mC },
+            tip: tip !== "" ? tip : "Cargado"
+        });
+    }
+});
     if (itemsPrevisualizadosExcel.length === 0) {
       alert("No se encontraron filas válidas con columnas de OEM/CÓDIGO y DESCRIPCIÓN.");
       return;
