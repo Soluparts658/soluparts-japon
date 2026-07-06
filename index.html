@@ -214,9 +214,10 @@
       
       <div class="field">
         <label>Marca del Vehículo *</label>
-        <select id="c-marca-v">
-          <option>TOYOTA</option><option>MITSUBISHI</option><option>NISSAN</option><option>ISUZU</option><option>DAIHATSU</option><option>HYUNDAI / KIA</option>
-        </select>
+        <select id="c-marca-v" onchange="verificarNuevaMarca()">
+    <option>TOYOTA</option><option>MITSUBISHI</option><option>NISSAN</option><option>ISUZU</option><option>DAIHATSU</option><option>HYUNDAI / KIA</option>
+    <option value="OTRA">OTRA (Especificar...)</option>
+</select>
       </div>
       <div class="field"><label>Marca del Producto / Fabricante</label><input id="c-marca-p" placeholder="Ej: GOR"></div>
       
@@ -1074,6 +1075,31 @@ function generarGraficoRanking() {
     type: 'pie',
     data: { labels: labels, datasets: [{ data: Object.values(conteo), backgroundColor: ['#2563EB','#16A34A','#D97706','#06B6D4','#9333EA'] }] }
   });
+}
+function verificarNuevaMarca() {
+    const selectMarca = document.getElementById("c-marca-v");
+    if (!selectMarca) return;
+
+    if (selectMarca.value === "OTRA") {
+        const nuevaMarca = prompt("Ingrese el nombre de la nueva marca de vehículo:");
+        
+        if (nuevaMarca && nuevaMarca.trim() !== "") {
+            const marcaNormalizada = nuevaMarca.trim().toUpperCase();
+            
+            // Creamos la nueva opción dinámicamente
+            const nuevaOpcion = document.createElement("option");
+            nuevaOpcion.value = marcaNormalizada;
+            nuevaOpcion.text = marcaNormalizada;
+            nuevaOpcion.selected = true;
+            
+            // La insertamos justo antes de la opción "OTRA"
+            selectMarca.insertBefore(nuevaOpcion, selectMarca.lastChild);
+            alert("¡Marca '" + marcaNormalizada + "' agregada temporalmente!");
+        } else {
+            // Si cancela, vuelve a la primera opción por defecto (TOYOTA)
+            selectMarca.selectedIndex = 0;
+        }
+    }
 }
 </script>
 </body>
