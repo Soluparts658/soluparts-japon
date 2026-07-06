@@ -980,6 +980,12 @@ function cargarCostosAlFormulario() {
 }
 
 function descargarReporteFechas() {
+    const clave = prompt("Ingrese la contraseña de seguridad para descargar el reporte:");
+    
+    if (clave !== "2026") {
+        alert("Acceso denegado. Contraseña incorrecta.");
+        return;
+    }
   const desde = document.getElementById('rep-desde').value;
   const hasta = document.getElementById('rep-hasta').value;
   if(!desde || !hasta) return alert("Elegí el rango de fechas.");
