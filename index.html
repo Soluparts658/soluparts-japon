@@ -981,38 +981,37 @@ function cargarCostosAlFormulario() {
 
 function descargarReporteFechas() {
     const clave = prompt("Ingrese la contraseña de seguridad para descargar el reporte:");
-    
-    if (clave !== "2026") {
-        alert("Acceso denegado. Contraseña incorrecta.");
-        return;
-    }
+    if (clave !== "2026") return alert("Acceso denegado. Contraseña incorrecta.");
 
     const desde = document.getElementById('rep-desde').value;
     const hasta = document.getElementById('rep-hasta').value;
     if(!desde || !hasta) return alert("Elegí el rango de fechas.");
 
     const items = window.listaNormalizadaRepuestos || [];
+    const TIME_DESDE = new Date(desde + "T00:00:00").getTime();
+    const TIME_HASTA = new Date(hasta + "T23:59:59").getTime();
     
     const filtrados = items.filter(r => {
         if (!r.fecha_registro) return false;
-        
-        // CORREGIDO: Limpieza de texto legal sin errores de variables
-        const fechaTextoLimpio = r.fecha_registro.toString().trim();
-        const partes = fechaTextoLimpio.split('/');
-        if (partes.length !== 3) return false;
-        
-        const diaItem = parseInt(partes[0], 10);
-        const mesItem = parseInt(partes[1], 10) - 1;
-        const anioItem = parseInt(partes[2], 10);
-        const fechaItem = new Date(anioItem, mesItem, diaItem, 12, 0, 0);
-        
-        const partesDesde = desde.split('-');
-        const fechaDesde = new Date(parseInt(partesDesde[0], 10), parseInt(partesDesde[1], 10) - 1, parseInt(partesDesde[2], 10), 0, 0, 0);
-        
-        const partesHasta = hasta.split('-');
-        const fechaHasta = new Date(parseInt(partesHasta[0], 10), parseInt(partesHasta[1], 10) - 1, parseInt(partesHasta[2], 10), 23, 59, 59);
-        
-        return fechaItem >= fechaDesde && fechaItem <= fechaHasta;
+        let fechaTexto = r.fecha_registro.toString().trim();
+        let fechaItem;
+
+        if (fechaTexto.includes('/')) {
+            const p = fechaTexto.split('/');
+            if (p.length === 3) {
+                if (p[2].length === 4) {
+                    fechaItem = new Date(`${p[2]}-${p[1]}-${p[0]}T12:00:00`);
+                } else {
+                    fechaItem = new Date(`${p[0]}-${p[1]}-${p[2]}T12:00:00`);
+                }
+            }
+        } else {
+            fechaItem = new Date(fechaTexto.includes('T') ? fechaTexto : fechaTexto + "T12:00:00");
+        }
+
+        if (isNaN(fechaItem.getTime())) fechaItem = new Date(fechaTexto);
+        const TIME_ITEM = fechaItem.getTime();
+        return TIME_ITEM >= TIME_DESDE && TIME_ITEM <= TIME_HASTA;
     });
 
     if(filtrados.length === 0) return alert("No hay datos en este rango.");
@@ -1090,26 +1089,41 @@ function generarGraficoRanking() {
 
     const items = window.listaNormalizadaRepuestos || [];
     
+    // Convertimos los selectores de la pantalla a números comparables puro (Timestamp)
+    const TIME_DESDE = new Date(desde + "T00:00:00").getTime();
+    const TIME_HASTA = new Date(hasta + "T23:59:59").getTime();
+
     items.forEach(r => {
         if (!r.fecha_registro) return;
         
-        // CORREGIDO: Sin espacios raros ni letras cambiadas
-        const fechaTextoLimpio = r.fecha_registro.toString().trim();
-        const partes = fechaTextoLimpio.split('/');
-        if (partes.length !== 3) return;
-        
-        const diaItem = parseInt(partes[0], 10);
-        const mesItem = parseInt(partes[1], 10) - 1;
-        const anioItem = parseInt(partes[2], 10);
-        const fechaItem = new Date(anioItem, mesItem, diaItem, 12, 0, 0);
-        
-        const partesDesde = desde.split('-');
-        const fechaDesde = new Date(parseInt(partesDesde[0], 10), parseInt(partesDesde[1], 10) - 1, parseInt(partesDesde[2], 10), 0, 0, 0);
-        
-        const partesHasta = hasta.split('-');
-        const fechaHasta = new Date(parseInt(partesHasta[0], 10), parseInt(partesHasta[1], 10) - 1, parseInt(partesHasta[2], 10), 23, 59, 59);
-        
-        if (fechaItem >= fechaDesde && fechaItem <= fechaHasta) {
+        let fechaTexto = r.fecha_registro.toString().trim();
+        let fechaItem;
+
+        // Si la fecha viene en formato latino DD/MM/AAAA, la reordenamos a AAAA-MM-DD para que la compu no se maree
+        if (fechaTexto.includes('/')) {
+            const p = fechaTexto.split('/');
+            if (p.length === 3) {
+                // Detectamos si el año está al final (ej: 07/07/2026) o al inicio
+                if (p[2].length === 4) {
+                    fechaItem = new Date(`${p[2]}-${p[1]}-${p[0]}T12:00:00`);
+                } else {
+                    fechaItem = new Date(`${p[0]}-${p[1]}-${p[2]}T12:00:00`);
+                }
+            }
+        } else {
+            // Si viene con guiones (ISO estándar)
+            fechaItem = new Date(fechaTexto.includes('T') ? fechaTexto : fechaTexto + "T12:00:00");
+        }
+
+        // Si la conversión falló por algún formato rarísimo, probamos la lectura directa
+        if (isNaN(fechaItem.getTime())) {
+            fechaItem = new Date(fechaTexto);
+        }
+
+        const TIME_ITEM = fechaItem.getTime();
+
+        // Comparación numérica pura de milisegundos (cero fallas)
+        if (TIME_ITEM >= TIME_DESDE && TIME_ITEM <= TIME_HASTA) {
             const op = r.operador || "Sistema Automático";
             conteo[op] = (conteo[op] || 0) + 1;
         }
