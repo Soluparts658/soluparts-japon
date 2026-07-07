@@ -986,47 +986,55 @@ function descargarReporteFechas() {
         alert("Acceso denegado. Contraseña incorrecta.");
         return;
     }
-  const desde = document.getElementById('rep-desde').value;
-  const hasta = document.getElementById('rep-hasta').value;
-  if(!desde || !hasta) return alert("Elegí el rango de fechas.");
-  
-  const items = window.listaNormalizadaRepuestos || [];
+
+    const desde = document.getElementById('rep-desde').value;
+    const hasta = document.getElementById('rep-hasta').value;
+    if(!desde || !hasta) return alert("Elegí el rango de fechas.");
+
+    const items = window.listaNormalizadaRepuestos || [];
     
     const filtrados = items.filter(r => {
         if (!r.fecha_registro) return false;
         
-        // 1. Convertimos la fecha del repuesto (DD/MM/AAAA) a objeto Fecha real
-        const partes = r.fecha_registro.split('/');
+        // CORREGIDO: Limpieza de texto legal sin errores de variables
+        const fechaTextoLimpio = r.fecha_registro.toString().trim();
+        const partes = fechaTextoLimpio.split('/');
         if (partes.length !== 3) return false;
-        const fechaItem = new Date(partes[2], partes[1] - 1, partes[0], 12, 0, 0); // Forzamos mediodía para evitar desfases de zona horaria
         
-        // 2. Convertimos las fechas del buscador (AAAA-MM-DD) a objetos Fecha reales
-        const fechaDesde = new Date(desde + "T00:00:00");
-        const fechaHasta = new Date(hasta + "T23:59:59");
+        const diaItem = parseInt(partes[0], 10);
+        const mesItem = parseInt(partes[1], 10) - 1;
+        const anioItem = parseInt(partes[2], 10);
+        const fechaItem = new Date(anioItem, mesItem, diaItem, 12, 0, 0);
         
-        // 3. Comparamos matemáticamente el rango correcto
+        const partesDesde = desde.split('-');
+        const fechaDesde = new Date(parseInt(partesDesde[0], 10), parseInt(partesDesde[1], 10) - 1, parseInt(partesDesde[2], 10), 0, 0, 0);
+        
+        const partesHasta = hasta.split('-');
+        const fechaHasta = new Date(parseInt(partesHasta[0], 10), parseInt(partesHasta[1], 10) - 1, parseInt(partesHasta[2], 10), 23, 59, 59);
+        
         return fechaItem >= fechaDesde && fechaItem <= fechaHasta;
     });
-  if(filtrados.length === 0) return alert("No hay datos en este rango.");
 
-  const datosEstructurados = filtrados.map(r => {
-    const med = r.medidas ? `${r.medidas.a || 0}x${r.medidas.b || 0}x${r.medidas.c || 0}` : "0x0x0";
-    return {
-      "OEM (Código)": r.codigo_oem || "S/C",
-      "Descripción": r.descripcion,
-      "Marca": r.marca_vehiculo,
-      "Vehículo": r.vehículo,
-      "Nro. VIN / Chasis": r.vin || "-",
-      "Medidas / Tips Técnicos": r.tip ? `${med} / ${r.tip}` : med,
-      "Venta": r.venta && r.venta > 0 ? `Gs. ${parseInt(r.venta).toLocaleString('es-PY')}` : "Consultar Jefe",
-      "Firma (Cargado por)": r.operador
-    };
-  });
+    if(filtrados.length === 0) return alert("No hay datos en este rango.");
 
-  const wb = XLSX.utils.book_new();
-  const ws = XLSX.utils.json_to_sheet(datosEstructurados);
-  XLSX.utils.book_append_sheet(wb, ws, "Historial Técnico");
-  XLSX.writeFile(wb, `Reporte_Stock_SoluParts.xlsx`);
+    const datosEstructurados = filtrados.map(r => {
+        const med = r.medidas ? `${r.medidas.a || 0}x${r.medidas.b || 0}x${r.medidas.c || 0}` : "";
+        return {
+            "OEM (Código)": r.codigo_oem || "S/C",
+            "Descripción": r.descripcion,
+            "Marca": r.marca_vehiculo,
+            "Vehículo": r.vehiculo,
+            "Nro. VIN / Chasis": r.vin || "-",
+            "Medidas / Tips Técnicos": r.tip ? `${med} / ${r.tip}` : med,
+            "Venta": r.venta && r.venta > 0 ? `Gs. ${parseInt(r.venta).toLocaleString('es-PY')}` : "-",
+            "Firma (Cargado por)": r.operador
+        };
+    });
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(datosEstructurados);
+    XLSX.utils.book_append_sheet(wb, ws, "Reporte");
+    XLSX.writeFile(wb, "Reporte_Cargas_Tecnico.xlsx");
 }
 
 function descargarReporteCostosJefe() {
@@ -1085,7 +1093,7 @@ function generarGraficoRanking() {
     items.forEach(r => {
         if (!r.fecha_registro) return;
         
-        // 1. Limpiamos espacios y separamos la fecha del repuesto (DD/MM/AAAA)
+        // CORREGIDO: Sin espacios raros ni letras cambiadas
         const fechaTextoLimpio = r.fecha_registro.toString().trim();
         const partes = fechaTextoLimpio.split('/');
         if (partes.length !== 3) return;
@@ -1095,14 +1103,12 @@ function generarGraficoRanking() {
         const anioItem = parseInt(partes[2], 10);
         const fechaItem = new Date(anioItem, mesItem, diaItem, 12, 0, 0);
         
-        // 2. Convertimos las fechas del buscador (AAAA-MM-DD)
         const partesDesde = desde.split('-');
         const fechaDesde = new Date(parseInt(partesDesde[0], 10), parseInt(partesDesde[1], 10) - 1, parseInt(partesDesde[2], 10), 0, 0, 0);
         
         const partesHasta = hasta.split('-');
         const fechaHasta = new Date(parseInt(partesHasta[0], 10), parseInt(partesHasta[1], 10) - 1, parseInt(partesHasta[2], 10), 23, 59, 59);
         
-        // 3. Si la fecha entra en el rango, sumamos la carga al operador
         if (fechaItem >= fechaDesde && fechaItem <= fechaHasta) {
             const op = r.operador || "Sistema Automático";
             conteo[op] = (conteo[op] || 0) + 1;
