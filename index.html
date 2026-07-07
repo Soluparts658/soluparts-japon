@@ -919,20 +919,28 @@ async function guardarFichaEnNube() {
   }
 
   const precioExistente = original.venta || 0;
-  const provExistente = original.proveedor || "";
-  const costosExistentes = original.costos || { corea:{fob:0,cif:0}, japon:{fob:0,cif:0}, china:{fob:0,cif:0} };
+const provExistente = original.proveedor || "";
+const costosExistentes = original.costos || { corea:{fob:0,cif:0}, japon:{fob:0,cif:0}, china:{fob:0,cif:0} };
 
-  const R_URL = BASE_URL + "repuestos/" + oem + ".json";
-  const obj = {
-    codigo_oem: oem, descripcion: desc, vehículo: veh, vin: vin, marca_vehiculo: marcaV, marca_proveedor: marcaP,
-    venta: precioExistente, operador: operador, tip: tip, fecha_registro: "2026-06-19",
-    medidas: { a: parseFloat(document.getElementById('m-a').value)||0, b: parseFloat(document.getElementById('m-b').value)||0, c: parseFloat(document.getElementById('m-c').value)||0 },
-    proveedor: provExistente, costos: costosExistentes
-  };
+// Capturamos la fecha actual de la computadora en formato AAAA-MM-DD
+const hoy = new Date();
+const anio = hoy.getFullYear();
+const mes = String(hoy.getMonth() + 1).padStart(2, '0');
+const dia = String(hoy.getDate()).padStart(2, '0');
+const fechaActual = `${anio}-${mes}-${dia}`;
 
-  if (baseDatosCompletaCompleta[oem] && oem !== "repuestos" && oem !== "operadores") {
-    await fetch(BASE_URL + oem + ".json", { method: 'DELETE' });
-  }
+const R_URL = BASE_URL + "repuestos/" + oem + ".json";
+const obj = {
+  codigo_oem: oem, descripcion: desc, vehículo: veh, vin: vin, marca_vehiculo: marcaV, marca_proveedor: marcaP,
+  venta: precioExistente, operador: operador, tip: tip, 
+  fecha_registro: fechaActual, // <-- CORREGIDO: Ahora registra el día real
+  medidas: { a: parseFloat(document.getElementById('m-a').value)||0, b: parseFloat(document.getElementById('m-b').value)||0, c: parseFloat(document.getElementById('m-c').value)||0 },
+  proveedor: provExistente, costos: costosExistentes
+};
+
+if (baseDatosCompletaCompleta[oem] && oem !== "repuestos" && oem !== "operadores") {
+  await fetch(BASE_URL + oem + ".json", { method: 'DELETE' });
+}
 
   await fetch(R_URL, { method: 'PUT', body: JSON.stringify(obj) });
   alert(`¡Ítem ${oem} procesado con éxito en la nube!`);
