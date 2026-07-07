@@ -1075,27 +1075,48 @@ function descargarReporteCostosJefe() {
 }
 
 function generarGraficoRanking() {
-  const desde = document.getElementById('rep-desde').value;
-  const hasta = document.getElementById('rep-hasta').value;
-  if(!desde || !hasta) return alert("Elegí el rango de fechas.");
-  const conteo = {};
-  
-  const items = window.listaNormalizadaRepuestos || [];
-  items.forEach(r => {
-    if(r.fecha_registro >= desde && r.fecha_registro <= hasta) {
-      const op = r.operador || "Sistema Automático";
-      conteo[op] = (conteo[op] || 0) + 1;
-    }
-  });
-  
-  const labels = Object.keys(conteo);
-  if(labels.length === 0) return alert("No hay registros en este rango.");
-  document.getElementById('contenedor-grafico').style.display = "block";
-  if(miGraficoInstancia) miGraficoInstancia.destroy();
-  miGraficoInstancia = new Chart(document.getElementById('graficoTortaPro').getContext('2d'), {
-    type: 'pie',
-    data: { labels: labels, datasets: [{ data: Object.values(conteo), backgroundColor: ['#2563EB','#16A34A','#D97706','#06B6D4','#9333EA'] }] }
-  });
+    const desde = document.getElementById('rep-desde').value;
+    const hasta = document.getElementById('rep-hasta').value;
+    if(!desde || !hasta) return alert("Elegí el rango de fechas.");
+    const conteo = {};
+
+    const items = window.listaNormalizadaRepuestos || [];
+    
+    items.forEach(r => {
+        if (!r.fecha_registro) return;
+        
+        // 1. Limpiamos espacios y separamos la fecha del repuesto (DD/MM/AAAA)
+        const fechaTextoLimpio = r.fecha_registro.toString().trim();
+        const partes = fechaTextoLimpio.split('/');
+        if (partes.length !== 3) return;
+        
+        const diaItem = parseInt(partes[0], 10);
+        const mesItem = parseInt(partes[1], 10) - 1;
+        const anioItem = parseInt(partes[2], 10);
+        const fechaItem = new Date(anioItem, mesItem, diaItem, 12, 0, 0);
+        
+        // 2. Convertimos las fechas del buscador (AAAA-MM-DD)
+        const partesDesde = desde.split('-');
+        const fechaDesde = new Date(parseInt(partesDesde[0], 10), parseInt(partesDesde[1], 10) - 1, parseInt(partesDesde[2], 10), 0, 0, 0);
+        
+        const partesHasta = hasta.split('-');
+        const fechaHasta = new Date(parseInt(partesHasta[0], 10), parseInt(partesHasta[1], 10) - 1, parseInt(partesHasta[2], 10), 23, 59, 59);
+        
+        // 3. Si la fecha entra en el rango, sumamos la carga al operador
+        if (fechaItem >= fechaDesde && fechaItem <= fechaHasta) {
+            const op = r.operador || "Sistema Automático";
+            conteo[op] = (conteo[op] || 0) + 1;
+        }
+    });
+
+    const labels = Object.keys(conteo);
+    if(labels.length === 0) return alert("No hay registros en este rango.");
+    document.getElementById('contenedor-grafico').style.display = "block";
+    if(miGraficoInstancia) miGraficoInstancia.destroy();
+    miGraficoInstancia = new Chart(document.getElementById('graficoTortaPro').getContext('2d'), {
+        type: 'pie',
+        data: { labels: labels, datasets: [{ data: Object.values(conteo), backgroundColor: ['#2563EB','#16A34A','#D97706','#DC2626','#7C3AED'] }] }
+    });
 }
 function verificarNuevaMarca() {
     const selectMarca = document.getElementById("c-marca-v");
