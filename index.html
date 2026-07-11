@@ -987,7 +987,7 @@ function cargarCostosAlFormulario() {
   calcularMargenTiempoReal();
 }
 
-function descargarReporteFechas() {
+async function descargarReporteFechas() {
     const clave = prompt("Ingrese la contraseña de seguridad para descargar el reporte:");
     if (clave !== "2026") return alert("Acceso denegado. Contraseña incorrecta.");
 
@@ -1005,24 +1005,93 @@ function descargarReporteFechas() {
 
     if(filtrados.length === 0) return alert("No hay datos en este rango.");
 
-    const datosEstructurados = filtrados.map(r => {
+    // 1. Crear el libro de trabajo limpio
+    const wb = XLSX.utils.book_new();
+    
+    // 2. Armar la matriz de datos con filas de diseño manual para dar estilo ejecutivo
+    const rows = [];
+    
+    // Título Principal (Fila 1)
+    rows.push(["REPORTE DE CONTROL DE CARGAS - SOLUPARTS JAPÓN"]);
+    // Subtítulo (Fila 2)
+    rows.push([`Filtro aplicado: desde ${desde} hasta ${hasta} | Generado el: ${new Date().toLocaleDateString('es-PY')}`]);
+    // Fila vacía de separación (Fila 3)
+    rows.push([]);
+    
+    // Encabezados de la Tabla (Fila 4)
+    const encabezados = [
+        "OEM (Código)", "Descripción", "Marca", "Vehículo", 
+        "Nro. VIN / Chasis", "Medidas / Tips Técnicos", "Venta", "Firma (Cargado por)"
+    ];
+    rows.push(encabezados);
+
+    // 3. Mapear los repuestos filtrados (A partir de la Fila 5)
+    let totalFilasDatos = filtrados.length;
+    filtrados.forEach(r => {
         const med = r.medidas ? `${r.medidas.a || 0}x${r.medidas.b || 0}x${r.medidas.c || 0}` : "";
-        return {
-            "OEM (Código)": r.codigo_oem || "S/C",
-            "Descripción": r.descripcion,
-            "Marca": r.marca_vehiculo,
-            "Vehículo": r.vehiculo,
-            "Nro. VIN / Chasis": r.vin || "-",
-            "Medidas / Tips Técnicos": r.tip ? `${med} / ${r.tip}` : med,
-            "Venta": r.venta && r.venta > 0 ? `Gs. ${parseInt(r.venta).toLocaleString('es-PY')}` : "-",
-            "Firma (Cargado por)": r.operador
-        };
+        const tipsMedidas = r.tip ? `${med} / ${r.tip}` : med;
+        const precioVenta = r.venta && r.venta > 0 ? parseInt(r.venta) : 0;
+        
+        rows.push([
+            r.codigo_oem || "S/C",
+            r.descripcion || "-",
+            r.marca_vehiculo || "-",
+            r.vehículo || r.vehiculo || "-",
+            r.vin || "-",
+            tipsMedidas || "-",
+            precioVenta, // Guardamos como número puro para que Excel pueda sumar
+            r.operador || "Sistema"
+        ]);
     });
 
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.json_to_sheet(datosEstructurados);
-    XLSX.utils.book_append_sheet(wb, ws, "Reporte");
-    XLSX.writeFile(wb, "Reporte_Cargas_Tecnico.xlsx");
+    // 4. Agregar la Fila de Totales con Fórmula real de Excel al final
+    const filaInicialDatos = 5;
+    const filaFinalDatos = 4 + totalFilasDatos;
+    const filaTotales = filaFinalDatos + 1;
+    
+    const filaTotalObj = ["", "", "", "", "", "TOTAL VENTAS:"];
+    // Metemos la estructura de fórmula de SheetJS para la celda G (columna 7)
+    filaTotalObj.push({ t: 'n', f: `SUM(G${filaInicialDatos}:G${filaFinalDatos})` }); 
+    filaTotalObj.push("");
+    rows.push(filaTotalObj);
+
+    // 5. Convertir la matriz completa a una hoja de Excel
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+
+    // 6. Aplicar configuraciones de Estructura Avanzada (Mapeos y Filtros)
+    // Combinar el título principal en la fila 1 (De la A a la H)
+    ws['!merges'] = [
+        { s: { r: 0, c: 0 }, e: { r: 0, c: 7 } }
+    ];
+
+    // Auto-ajustar el ancho de las columnas dinámicamente según el contenido
+    const colWidths = encabezados.map((h, i) => {
+        let maxLen = h.length;
+        for (let r = 3; r < rows.length; r++) {
+            const val = rows[r][i];
+            if (val) {
+                const strLen = val.toString().length;
+                if (strLen > maxLen) maxLen = strLen;
+            }
+        }
+        return { wch: maxLen + 4 }; // Le sumamos un margen de holgura
+    });
+    ws['!cols'] = colWidths;
+
+    // Formatear la columna de Ventas (G) y la Celda del Total como Moneda de Paraguay
+    for (let i = filaInicialDatos; i <= filaTotales; i++) {
+        const celdaRef = `G${i}`;
+        if (ws[celdaRef]) {
+            ws[celdaRef].z = '"Gs. "#,##0'; // Formato nativo de Excel para Guaraníes
+        }
+    }
+
+    // Activar los filtros automáticos en la fila de encabezados (Fila 4 hasta el final de los datos)
+    ws['!autofilter'] = { ref: `A4:H${filaFinalDatos}` };
+
+    // 7. Guardar el archivo final refinado
+    XLSX.utils.book_append_sheet(wb, ws, "Control de Cargas");
+    XLSX.writeFile(wb, "Reporte_Cargas_Premium.xlsx");
 }
 
 function descargarReporteCostosJefe() {
