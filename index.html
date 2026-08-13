@@ -471,7 +471,6 @@ async function inicializarTodo() {
 }
 
 function renderizarOperadores() {
-    // Lista de sucursales aquí adentro para no tener que buscar nada arriba
     const listaSucursalesOficiales = ["Asunción", "MRA", "San Lorenzo", "Lambaré", "Ñemby", "Luque", "CDE", "Coronel Oviedo", "Encarnación", "Avelino"];
     
     const select = document.getElementById('c-operador');
@@ -482,11 +481,14 @@ function renderizarOperadores() {
     if (select) select.innerHTML = `<option value="">-- Seleccioná tu Firma --</option>` + baseDatosOperadores.map(n => `<option value="${n}">${n}</option>`).join('');
     if (selectExcel) selectExcel.innerHTML = optionsHtml;
 
-    // --- AGREGAR DESPLEGABLE DE SUCURSAL ABAJO DEL DE OPERADOR ---
+    // --- CORRECCIÓN DE DISEÑO PARA SUCURSAL ---
     if (select && !document.getElementById('c-sucursal')) {
+        // Buscamos el contenedor padre (el recuadro gris completo de la firma)
+        const contenedorPadre = select.closest('div') ? select.closest('div').parentNode : select.parentNode;
+        
         const contenedorSucursal = document.createElement('div');
-        contenedorSucursal.style.marginTop = '10px';
         contenedorSucursal.id = 'contenedor-sucursal';
+        contenedorSucursal.style.cssText = 'margin-top: 12px; width: 100%; clear: both;';
         
         let opcionesSucursal = `<option value="">-- Seleccioná Sucursal --</option>`;
         listaSucursalesOficiales.forEach(s => {
@@ -495,16 +497,18 @@ function renderizarOperadores() {
         opcionesSucursal += `<option value="OTRA">➕ OTRA SUCURSAL...</option>`;
 
         contenedorSucursal.innerHTML = `
-            <label style="font-weight: bold; font-size: 0.85rem; color: #1E3A8A; display: block; margin-bottom: 4px;">📍 Sucursal:</label>
-            <select id="c-sucursal" onchange="verificarNuevaSucursal()" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #CBD5E1; font-size: 1rem; cursor: pointer;">
+            <label style="font-weight: bold; font-size: 0.85rem; color: #1E3A8A; display: block; margin-bottom: 4px;">📍 SUCURSAL:</label>
+            <select id="c-sucursal" onchange="verificarNuevaSucursal()" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #CBD5E1; font-size: 1rem; cursor: pointer; background-color: #ffffff;">
                 ${opcionesSucursal}
             </select>
         `;
         
-        select.parentNode.insertBefore(contenedorSucursal, select.nextSibling);
+        // Lo insertamos debajo del bloque completo de Firma + Botón +
+        if (contenedorPadre) {
+            contenedorPadre.appendChild(contenedorSucursal);
+        }
     }
 }
-
 function verificarNuevaSucursal() {
     const selectSuc = document.getElementById('c-sucursal');
     if (!selectSuc) return;
