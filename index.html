@@ -471,13 +471,60 @@ async function inicializarTodo() {
 }
 
 function renderizarOperadores() {
-  const select = document.getElementById('c-operador');
-  const selectExcel = document.getElementById('excel-operador-firma');
-  baseDatosOperadores.sort((a,b) => a.localeCompare(b));
-  
-  const optionsHtml = `<option value="">-- Firmar Lote Masivo --</option>` + baseDatosOperadores.map(n => `<option value="${n}">${n}</option>`).join('');
-  select.innerHTML = `<option value="">-- Seleccioná tu Firma --</option>` + baseDatosOperadores.map(n => `<option value="${n}">${n}</option>`).join('');
-  if (selectExcel) selectExcel.innerHTML = optionsHtml;
+    // Lista de sucursales aquí adentro para no tener que buscar nada arriba
+    const listaSucursalesOficiales = ["Asunción", "MRA", "San Lorenzo", "Lambaré", "Ñemby", "Luque", "CDE", "Coronel Oviedo", "Encarnación", "Avelino"];
+    
+    const select = document.getElementById('c-operador');
+    const selectExcel = document.getElementById('excel-operador-firma');
+    baseDatosOperadores.sort((a,b) => a.localeCompare(b));
+
+    const optionsHtml = `<option value="">-- Firmar Lote Masivo --</option>` + baseDatosOperadores.map(n => `<option value="${n}">${n}</option>`).join('');
+    if (select) select.innerHTML = `<option value="">-- Seleccioná tu Firma --</option>` + baseDatosOperadores.map(n => `<option value="${n}">${n}</option>`).join('');
+    if (selectExcel) selectExcel.innerHTML = optionsHtml;
+
+    // --- AGREGAR DESPLEGABLE DE SUCURSAL ABAJO DEL DE OPERADOR ---
+    if (select && !document.getElementById('c-sucursal')) {
+        const contenedorSucursal = document.createElement('div');
+        contenedorSucursal.style.marginTop = '10px';
+        contenedorSucursal.id = 'contenedor-sucursal';
+        
+        let opcionesSucursal = `<option value="">-- Seleccioná Sucursal --</option>`;
+        listaSucursalesOficiales.forEach(s => {
+            opcionesSucursal += `<option value="${s}">${s}</option>`;
+        });
+        opcionesSucursal += `<option value="OTRA">➕ OTRA SUCURSAL...</option>`;
+
+        contenedorSucursal.innerHTML = `
+            <label style="font-weight: bold; font-size: 0.85rem; color: #1E3A8A; display: block; margin-bottom: 4px;">📍 Sucursal:</label>
+            <select id="c-sucursal" onchange="verificarNuevaSucursal()" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #CBD5E1; font-size: 1rem; cursor: pointer;">
+                ${opcionesSucursal}
+            </select>
+        `;
+        
+        select.parentNode.insertBefore(contenedorSucursal, select.nextSibling);
+    }
+}
+
+function verificarNuevaSucursal() {
+    const selectSuc = document.getElementById('c-sucursal');
+    if (!selectSuc) return;
+
+    if (selectSuc.value === "OTRA") {
+        const nuevaSuc = prompt("Ingrese el nombre de la nueva sucursal:");
+        if (nuevaSuc && nuevaSuc.trim() !== "") {
+            const sucLimpia = nuevaSuc.trim().toUpperCase();
+            
+            const nuevaOpcion = document.createElement("option");
+            nuevaOpcion.value = sucLimpia;
+            nuevaOpcion.text = sucLimpia;
+            nuevaOpcion.selected = true;
+
+            selectSuc.insertBefore(nuevaOpcion, selectSuc.lastChild);
+            alert("¡Sucursal '" + sucLimpia + "' agregada temporalmente!");
+        } else {
+            selectSuc.value = "";
+        }
+    }
 }
 
 async function agregarNuevoOperadorNube() {
