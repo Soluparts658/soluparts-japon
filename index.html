@@ -1174,7 +1174,7 @@ filtrados.forEach(r => {
     }
 
     // Activar los filtros automáticos en la fila de encabezados (Fila 4 hasta la columna I)
-    ws['!autofilter'] = { ref: `A4:I${filaFinalDatos}` };
+    ws['!autofilter'] = { ref: `A4:J${filaFinalDatos}` };
 
     // 7. Guardar el archivo final refinado
     XLSX.utils.book_append_sheet(wb, ws, "Control de Cargas");
