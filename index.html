@@ -228,7 +228,13 @@
   <option value="OTRA">OTRA (Especificar...)</option>
 </select>
       </div>
-      <div class="field"><label>Marca del Producto / Fabricante</label><input id="c-marca-p" placeholder="Ej: GOR"></div>
+      <div class="field"><label>Marca del Producto / Fabricante</label><input id="c-marca-p" placeholder="Ej: GOR"></div> 
+     <div class="field full" style="background: #FEF2F2; padding: 10px 14px; border-radius: 8px; border: 1.5px solid #FCA5A5; margin-bottom: 12px;">
+    <label style="color: #991B1B; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 13px;">
+        <input type="checkbox" id="c-reforzar" style="width: 18px; height: 18px; cursor: pointer; accent-color: #DC2626;">
+        🚨 REFORZAR ÍTEM (Marcar si el repuesto tiene mucha demanda / Urgente para pedido)
+    </label>
+</div>
       
       <div class="field full" style="background: #F5F3FF; padding: 12px; border-radius: 8px; border: 1px solid #DDD6FE;">
         <label style="color: #6D28D9; font-weight: bold;">✍️ Firma del Operador (Obligatorio para Guardar/Premios):</label>
@@ -968,6 +974,7 @@ async function guardarFichaEnNube() {
   const operador = document.getElementById('c-operador').value;
   const sucursal = document.getElementById('c-sucursal') ? document.getElementById('c-sucursal').value : "-";
   const tip = document.getElementById('c-tip').value.trim();
+  const reforzar = document.getElementById('c-reforzar') ? document.getElementById('c-reforzar').checked : false;
 
   // Validamos campos obligatorios, Firma y Sucursal
   if(!oem || !desc || !veh || !operador) return alert("Por favor, completá los campos obligatorios (*) y firmá con tu nombre.");
@@ -1003,7 +1010,8 @@ async function guardarFichaEnNube() {
     venta: precioExistente, 
     operador: operador, 
     sucursal: sucursal, // <--- SUCURSAL REGISTRADA AQUÍ
-    tip: tip, 
+    tip: tip,
+    reforzar: reforzar,
     fecha_registro: fechaActual,
     medidas: { a: parseFloat(document.getElementById('m-a').value)||0, b: parseFloat(document.getElementById('m-b').value)||0, c: parseFloat(document.getElementById('m-c').value)||0 },
     proveedor: provExistente, 
@@ -1093,29 +1101,34 @@ async function descargarReporteFechas() {
     // Encabezados de la Tabla (Fila 4) - AGREGAMOS "Sucursal" AL FINAL
     const encabezados = [
         "OEM (Código)", "Descripción", "Marca", "Vehículo", 
-        "Nro. VIN / Chasis", "Medidas / Tips Técnicos", "Venta", "Firma (Cargado por)", "Sucursal"
+        "Nro. VIN / Chasis", "Medidas / Tips Técnicos", "Venta", "Firma (Cargado por)", "Sucursal", "Prioridad / Estado"
     ];
     rows.push(encabezados);
 
     // 3. Mapear los repuestos filtrados (A partir de la Fila 5)
-    let totalFilasDatos = filtrados.length;
-    filtrados.forEach(r => {
-        const med = r.medidas ? `${r.medidas.a || 0}x${r.medidas.b || 0}x${r.medidas.c || 0}` : "";
-        const tipsMedidas = r.tip ? `${med} / ${r.tip}` : med;
-        const precioVenta = r.venta && r.venta > 0 ? parseInt(r.venta) : 0;
-        
-        rows.push([
-            r.codigo_oem || "S/C",
-            r.descripcion || "-",
-            r.marca_vehiculo || "-",
-            r.vehículo || r.vehiculo || "-",
-            r.vin || "-",
-            tipsMedidas || "-",
-            precioVenta, // Guardamos como número puro para que Excel pueda sumar
-            r.operador || "Sistema",
-            r.sucursal || "-" // <--- AQUI EXTRAEMOS LA SUCURSAL REGISTRADA
-        ]);
-    });
+let totalFilasDatos = filtrados.length;
+filtrados.forEach(r => {
+    const med = r.medidas ? `${r.medidas.a || 0}x${r.medidas.b || 0}x${r.medidas.c || 0}` : "";
+    const tipsMedidas = r.tip ? `${med} / ${r.tip}` : med;
+    const precioVenta = r.venta && r.venta > 0 ? parseInt(r.venta) : 0;
+
+    // EVALUAMOS SI VIENE MARCADO PARA REFORZAR
+    const esReforzado = r.reforzar === true;
+    const estadoPrioridad = esReforzado ? "🔥 REFORZAR PEDIDO" : "NORMAL";
+
+    rows.push([
+        r.codigo_oem || "S/C",
+        r.descripcion || "-",
+        r.marca_vehiculo || "-",
+        r.vehículo || r.vehiculo || "-",
+        r.vin || "-",
+        tipsMedidas || "-",
+        precioVenta, // Guardamos como número puro para que Excel pueda sumar
+        r.operador || "Sistema",
+        r.sucursal || "-", // <--- AQUI EXTRAEMOS LA SUCURSAL REGISTRADA
+        estadoPrioridad    // <--- AQUI AGREGAMOS LA PRIORIDAD / REFUERZO
+    ]);
+});
 
     // 4. Agregar la Fila de Totales con Fórmula real de Excel al final
     const filaInicialDatos = 5;
