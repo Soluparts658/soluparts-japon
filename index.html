@@ -1303,7 +1303,7 @@ function mostrarPopUpUsuario(usuario) {
     const titulo = document.getElementById('modalTitulo');
     const contenido = document.getElementById('modalContenido');
 
-    titulo.innerText = Cargas de ${usuario};
+   titulo.innerText = 'Cargas de ' + usuario;
 
     const itemsDelUsuario = (typeof listaItemsGlobal !== 'undefined' ? listaItemsGlobal : []).filter(item => 
         (item.usuario === usuario || item.registradoPor === usuario || item.vendedor === usuario)
