@@ -1297,44 +1297,40 @@ function verificarNuevaMarca() {
     }
 }
 
-// --- PEGAR LAS FUNCIONES AQUÍ (DENTRO DEL SCRIPT) ---
 function mostrarPopUpUsuario(usuario) {
     const modal = document.getElementById('modalCargas');
     const titulo = document.getElementById('modalTitulo');
     const contenido = document.getElementById('modalContenido');
 
-   titulo.innerText = 'Cargas de ' + usuario;
+    titulo.innerText = 'Cargas de ' + usuario;
 
-    const itemsDelUsuario = (typeof listaItemsGlobal !== 'undefined' ? listaItemsGlobal : []).filter(item => 
-        (item.usuario === usuario || item.registradoPor === usuario || item.vendedor === usuario)
-    );
+    const itemsDelUsuario = (typeof listaItemsGlobal !== 'undefined' ? listaItemsGlobal : []).filter(function(item) {
+        return item.usuario === usuario || item.registradoPor === usuario || item.vendedor === usuario;
+    });
 
     if (itemsDelUsuario.length === 0) {
-        contenido.innerHTML = <p style="text-align: center; color: #666; padding: 20px 0;">No se encontraron registros para ${usuario} en este rango.</p>;
+        contenido.innerHTML = '<p style="text-align: center; color: #666; padding: 20px 0;">No se encontraron registros para este usuario.</p>';
     } else {
-        let tablaHtml = `
-            <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; text-align: left;">
-                <thead>
-                    <tr style="background: #f1f5f9; color: #334155;">
-                        <th style="padding: 8px; border-bottom: 2px solid #cbd5e1;">Código / OEM</th>
-                        <th style="padding: 8px; border-bottom: 2px solid #cbd5e1;">Descripción</th>
-                        <th style="padding: 8px; border-bottom: 2px solid #cbd5e1;">Estado</th>
-                    </tr>
-                </thead>
-                <tbody>
-        `;
+        let tablaHtml = '<table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; text-align: left;">' +
+            '<thead><tr style="background: #f1f5f9; color: #334155;">' +
+            '<th style="padding: 8px; border-bottom: 2px solid #cbd5e1;">Código / OEM</th>' +
+            '<th style="padding: 8px; border-bottom: 2px solid #cbd5e1;">Descripción</th>' +
+            '<th style="padding: 8px; border-bottom: 2px solid #cbd5e1;">Estado</th>' +
+            '</tr></thead><tbody>';
 
-        itemsDelUsuario.forEach(item => {
-            tablaHtml += `
-                <tr style="border-bottom: 1px solid #e2e8f0;">
-                    <td style="padding: 8px; font-weight: 600; color: #0f172a;">${item.oem || item.codigo || '-'}</td>
-                    <td style="padding: 8px; color: #475569;">${item.descripcion || item.detalle || '-'}</td>
-                    <td style="padding: 8px;"><span style="background: #e2e8f0; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">${item.estado || 'Cargado'}</span></td>
-                </tr>
-            `;
+        itemsDelUsuario.forEach(function(item) {
+            let oem = item.oem || item.codigo || '-';
+            let desc = item.descripcion || item.detalle || '-';
+            let est = item.estado || 'Cargado';
+
+            tablaHtml += '<tr style="border-bottom: 1px solid #e2e8f0;">' +
+                '<td style="padding: 8px; font-weight: 600; color: #0f172a;">' + oem + '</td>' +
+                '<td style="padding: 8px; color: #475569;">' + desc + '</td>' +
+                '<td style="padding: 8px;"><span style="background: #e2e8f0; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">' + est + '</span></td>' +
+                '</tr>';
         });
 
-        tablaHtml += </tbody></table>;
+        tablaHtml += '</tbody></table>';
         contenido.innerHTML = tablaHtml;
     }
 
