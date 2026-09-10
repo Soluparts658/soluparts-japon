@@ -1307,8 +1307,22 @@ function mostrarPopUpUsuario(usuario) {
 
     titulo.innerText = 'Cargas de ' + usuario;
 
+    // Normalizamos el nombre buscado (minusculas y sin espacios extra)
+    const usuarioBusqueda = String(usuario || '').trim().toLowerCase();
+
     const itemsDelUsuario = (typeof listaItemsGlobal !== 'undefined' ? listaItemsGlobal : []).filter(function(item) {
-        return item.usuario === usuario || item.registradoPor === usuario || item.vendedor === usuario;
+        // Revisamos todos los posibles nombres de campos de usuario en el objeto
+        const u1 = String(item.usuario || '').trim().toLowerCase();
+        const u2 = String(item.registradoPor || '').trim().toLowerCase();
+        const u3 = String(item.vendedor || '').trim().toLowerCase();
+        const u4 = String(item.cargadoPor || '').trim().toLowerCase();
+        const u5 = String(item.user || '').trim().toLowerCase();
+
+        return u1 === usuarioBusqueda || 
+               u2 === usuarioBusqueda || 
+               u3 === usuarioBusqueda || 
+               u4 === usuarioBusqueda || 
+               u5 === usuarioBusqueda;
     });
 
     if (itemsDelUsuario.length === 0) {
