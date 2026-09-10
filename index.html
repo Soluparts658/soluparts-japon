@@ -1251,14 +1251,24 @@ function generarGraficoRanking() {
     if(labels.length === 0) return alert("No hay registros en este rango.");
     document.getElementById('contenedor-grafico').style.display = "block";
     if(miGraficoInstancia) miGraficoInstancia.destroy();
-   miGraficoInstancia = new Chart(document.getElementById('graficoTortaPro').getContext('2d'), {
+  miGraficoInstancia = new Chart(document.getElementById('graficoTortaPro').getContext('2d'), {
     type: 'pie',
-    data: { 
-        labels: labels, 
-        datasets: [{ 
-            data: Object.values(conteo), 
-            backgroundColor: ['#1E3A8A','#16A34A','#F97316','#DC2626','#7C3AED','#0891B2','#FACC15','#EC4899','#6B7280','#A16207','#22C55E','#3B82F6','#F472B6','#F59E0B','#94A3B8'] 
-        }] 
+    data: {
+        labels: labels,
+        datasets: [{
+            data: Object.values(conteo),
+            backgroundColor: ['#1E3A8A','#16A34A','#F97316','#DC2626','#7C3AED','#0891B2','#FACC15']
+        }]
+    },
+    options: {
+        responsive: true,
+        onClick: (event, activeElements, chart) => {
+            if (activeElements.length > 0) {
+                const index = activeElements[0].index;
+                const nombreUsuario = chart.data.labels[index];
+                mostrarPopUpUsuario(nombreUsuario);
+            }
+        }
     }
 });
 }
@@ -1282,11 +1292,73 @@ function verificarNuevaMarca() {
             selectMarca.insertBefore(nuevaOpcion, selectMarca.lastChild);
             alert("¡Marca '" + marcaNormalizada + "' agregada temporalmente!");
         } else {
-            // Si cancela, vuelve a la primera opción por defecto (TOYOTA)
-            selectMarca.selectedIndex = 0;
-        }
+          // Si cancela, vuelve a la primera opción por defecto (TOYOTA)
+        selectMarca.selectedIndex = 0;
     }
 }
+
+// --- PEGAR LAS FUNCIONES AQUÍ (DENTRO DEL SCRIPT) ---
+function mostrarPopUpUsuario(usuario) {
+    const modal = document.getElementById('modalCargas');
+    const titulo = document.getElementById('modalTitulo');
+    const contenido = document.getElementById('modalContenido');
+
+    titulo.innerText = Cargas de ${usuario};
+
+    const itemsDelUsuario = (typeof listaItemsGlobal !== 'undefined' ? listaItemsGlobal : []).filter(item => 
+        (item.usuario === usuario || item.registradoPor === usuario || item.vendedor === usuario)
+    );
+
+    if (itemsDelUsuario.length === 0) {
+        contenido.innerHTML = <p style="text-align: center; color: #666; padding: 20px 0;">No se encontraron registros para ${usuario} en este rango.</p>;
+    } else {
+        let tablaHtml = `
+            <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; text-align: left;">
+                <thead>
+                    <tr style="background: #f1f5f9; color: #334155;">
+                        <th style="padding: 8px; border-bottom: 2px solid #cbd5e1;">Código / OEM</th>
+                        <th style="padding: 8px; border-bottom: 2px solid #cbd5e1;">Descripción</th>
+                        <th style="padding: 8px; border-bottom: 2px solid #cbd5e1;">Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        itemsDelUsuario.forEach(item => {
+            tablaHtml += `
+                <tr style="border-bottom: 1px solid #e2e8f0;">
+                    <td style="padding: 8px; font-weight: 600; color: #0f172a;">${item.oem || item.codigo || '-'}</td>
+                    <td style="padding: 8px; color: #475569;">${item.descripcion || item.detalle || '-'}</td>
+                    <td style="padding: 8px;"><span style="background: #e2e8f0; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">${item.estado || 'Cargado'}</span></td>
+                </tr>
+            `;
+        });
+
+        tablaHtml += </tbody></table>;
+        contenido.innerHTML = tablaHtml;
+    }
+
+    modal.style.display = 'flex';
+}
+
+function cerrarModalCargas() {
+    document.getElementById('modalCargas').style.display = 'none';
+}
+
 </script>
+
+<!-- MODAL POP-UP PARA DETALLE DE CARGAS -->
+<div id="modalCargas" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.7); backdrop-filter: blur(3px); z-index: 9999; justify-content: center; align-items: center;">
+    <div style="background: #ffffff; border-radius: 12px; width: 90%; max-width: 600px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); color: #333;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 15px;">
+            <h3 id="modalTitulo" style="margin: 0; color: #0F172A; font-size: 1.1rem;">Detalle de Cargas</h3>
+            <button onclick="cerrarModalCargas()" style="background: transparent; border: none; font-size: 1.4rem; cursor: pointer; color: #666;">&times;</button>
+        </div>
+        <div id="modalContenido" style="max-height: 350px; overflow-y: auto;">
+            <!-- Aquí se cargará la lista de ítems dinámicamente -->
+        </div>
+    </div>
+</div>
+
 </body>
 </html>
