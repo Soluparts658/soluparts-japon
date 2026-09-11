@@ -1247,6 +1247,7 @@ function generarGraficoRanking() {
         }
     });
 
+window.listaItemsGlobal = (typeof items !== 'undefined' ? items : (typeof registros !== 'undefined' ? registros : []));
 const labels = Object.keys(conteo);
 if (labels.length === 0) return alert("No hay registros en este rango.");
 document.getElementById('contenedor-grafico').style.display = "block";
@@ -1305,49 +1306,65 @@ function mostrarPopUpUsuario(usuario) {
     const titulo = document.getElementById('modalTitulo');
     const contenido = document.getElementById('modalContenido');
 
+    if (!modal) return;
+
     titulo.innerText = 'Cargas de ' + usuario;
 
-    // Normalizamos el nombre buscado (minusculas y sin espacios extra)
+    let registrosBase = [];
+    if (typeof window.listaItemsGlobal !== 'undefined' && Array.isArray(window.listaItemsGlobal) && window.listaItemsGlobal.length > 0) {
+        registrosBase = window.listaItemsGlobal;
+    } else if (typeof registros !== 'undefined' && Array.isArray(registros)) {
+        registrosBase = registros;
+    } else if (typeof datos !== 'undefined' && Array.isArray(datos)) {
+        registrosBase = datos;
+    } else if (typeof listaItems !== 'undefined' && Array.isArray(listaItems)) {
+        registrosBase = listaItems;
+    }
+
     const usuarioBusqueda = String(usuario || '').trim().toLowerCase();
 
-    const itemsDelUsuario = (typeof listaItemsGlobal !== 'undefined' ? listaItemsGlobal : []).filter(function(item) {
-        // Revisamos todos los posibles nombres de campos de usuario en el objeto
-        const u1 = String(item.usuario || '').trim().toLowerCase();
-        const u2 = String(item.registradoPor || '').trim().toLowerCase();
-        const u3 = String(item.vendedor || '').trim().toLowerCase();
-        const u4 = String(item.cargadoPor || '').trim().toLowerCase();
-        const u5 = String(item.user || '').trim().toLowerCase();
-
-        return u1 === usuarioBusqueda || 
-               u2 === usuarioBusqueda || 
-               u3 === usuarioBusqueda || 
-               u4 === usuarioBusqueda || 
-               u5 === usuarioBusqueda;
+    const itemsDelUsuario = registrosBase.filter(function(item) {
+        if (!item) return false;
+        const op = String(item.operador || item.firma || item.usuario || item.registradoPor || item.vendedor || '').trim().toLowerCase();
+        return op === usuarioBusqueda || JSON.stringify(item).toLowerCase().includes(usuarioBusqueda);
     });
 
     if (itemsDelUsuario.length === 0) {
         contenido.innerHTML = '<p style="text-align: center; color: #666; padding: 20px 0;">No se encontraron registros para este usuario.</p>';
     } else {
-        let tablaHtml = '<table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; text-align: left;">' +
-            '<thead><tr style="background: #f1f5f9; color: #334155;">' +
-            '<th style="padding: 8px; border-bottom: 2px solid #cbd5e1;">Código / OEM</th>' +
-            '<th style="padding: 8px; border-bottom: 2px solid #cbd5e1;">Descripción</th>' +
-            '<th style="padding: 8px; border-bottom: 2px solid #cbd5e1;">Estado</th>' +
+        // Se omitió la columna Código OEM para proteger los datos de la empresa
+        let tablaHtml = '<div style="max-height: 350px; overflow-y: auto; overflow-x: auto;">' +
+            '<table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; text-align: left; min-width: 500px;">' +
+            '<thead><tr style="background: #f1f5f9; color: #334155; position: sticky; top: 0; z-index: 10;">' +
+            '<th style="padding: 10px; border-bottom: 2px solid #cbd5e1;">Vehículos / Chasis Compatibles</th>' +
+            '<th style="padding: 10px; border-bottom: 2px solid #cbd5e1;">Descripción del Repuesto</th>' +
+            '<th style="padding: 10px; border-bottom: 2px solid #cbd5e1;">Estado</th>' +
             '</tr></thead><tbody>';
 
         itemsDelUsuario.forEach(function(item) {
-            let oem = item.oem || item.codigo || '-';
-            let desc = item.descripcion || item.detalle || '-';
-            let est = item.estado || 'Cargado';
+            let vehiculoCompat = '-';
+            let desc = item.descripcionRepuesto || item.descripcion || item.detalle || item.repuesto || '-';
+            let est = item.estado || item.status || 'Cargado';
+
+            Object.keys(item).forEach(function(key) {
+                let k = key.toLowerCase().replace(/[^a-z0-9]/g, '');
+                let val = String(item[key] || '').trim();
+
+                if (!val || val === '-') return;
+
+                if (k.includes('vehiculo') || k.includes('chasis') || k.includes('compatib') || k.includes('auto') || k.includes('modelo')) {
+                    if (vehiculoCompat === '-') vehiculoCompat = val;
+                }
+            });
 
             tablaHtml += '<tr style="border-bottom: 1px solid #e2e8f0;">' +
-                '<td style="padding: 8px; font-weight: 600; color: #0f172a;">' + oem + '</td>' +
-                '<td style="padding: 8px; color: #475569;">' + desc + '</td>' +
-                '<td style="padding: 8px;"><span style="background: #e2e8f0; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">' + est + '</span></td>' +
+                '<td style="padding: 8px 10px; font-weight: 600; color: #1e293b;">' + vehiculoCompat + '</td>' +
+                '<td style="padding: 8px 10px; color: #334155;">' + desc + '</td>' +
+                '<td style="padding: 8px 10px;"><span style="background: #e2e8f0; color: #334155; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">' + est + '</span></td>' +
                 '</tr>';
         });
 
-        tablaHtml += '</tbody></table>';
+        tablaHtml += '</tbody></table></div>';
         contenido.innerHTML = tablaHtml;
     }
 
