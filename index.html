@@ -836,23 +836,38 @@ function renderizarFilasMostrador(lista) {
 }
 
 function ejecutarFiltroMostrador() {
-  const q = document.getElementById('search-input').value.toLowerCase().trim();
-  const items = window.listaNormalizadaRepuestos || [];
-  
-  const filtrados = items.filter(r => {
-    const oem = (r.codigo_oem || "").toString().toLowerCase();
-    const desc = (r.descripcion || "").toString().toLowerCase();
-    const veh = (r.vehículo || "").toString().toLowerCase();
-    const vin = (r.vin || "").toString().toLowerCase();
-    return oem.includes(q) || desc.includes(q) || veh.includes(q) || vin.includes(q);
-  });
-  
-  if (q.length >= 3) {
-    const coincidenciaExacta = items.find(it => it.codigo_oem.toLowerCase() === q);
-    if (coincidenciaExacta) registrarBúsquedaReciente(coincidenciaExacta.codigo_oem);
-  }
+    const rawQ = document.getElementById('search-input').value;
+    const qRaw = rawQ.toLowerCase().trim(); // Para búsqueda estándar de descripción
+    const qLimpio = rawQ.toLowerCase().replace(/[^a-z0-9]/g, ''); // Para VIN, Chasis y OEM (sin guiones/espacios)
+    
+    const items = window.listaNormalizadaRepuestos || [];
 
-  renderizarFilasMostrador(filtrados);
+    if (!qRaw) {
+        renderizarFilasMostrador(items);
+        return;
+    }
+
+    const filtrados = items.filter(r => {
+        // Texto crudo para descripciones
+        const desc = (r.descripcion || "").toString().toLowerCase();
+
+        // Texto limpio (sin caracteres especiales) para Chasis, VIN y OEM
+        const oem = (r.codigo_oem || "").toString().toLowerCase().replace(/[^a-z0-9]/g, '');
+        const veh = (r.vehiculo || "").toString().toLowerCase().replace(/[^a-z0-9]/g, '');
+        const vin = (r.vin || "").toString().toLowerCase().replace(/[^a-z0-9]/g, '');
+
+        // Coincidencia inteligente
+        return desc.includes(qRaw) || 
+               (qLimpio !== '' && (oem.includes(qLimpio) || veh.includes(qLimpio) || vin.includes(qLimpio)));
+    });
+
+    // Registra búsqueda reciente si hay coincidencia exacta de OEM
+    if (qRaw.length >= 3) {
+        const coincidenciaExacta = items.find(it => (it.codigo_oem || "").toString().toLowerCase() === qRaw);
+        if (coincidenciaExacta) registrarBúsquedaReciente(coincidenciaExacta.codigo_oem);
+    }
+
+    renderizarFilasMostrador(filtrados);
 }
 
 function lanzarVentanaEmergenteFicha(oem) {
