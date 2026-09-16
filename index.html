@@ -8,14 +8,75 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #E2E8F0; padding: 16px 8px 40px; min-height: 100vh; color: #1E293B; }
-  
-  /* CONTENEDOR EFECTO ELEVADO PREMIUM */
-  .window { width: 100%; max-width: 1080px; border-radius: 12px; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); background: #F8FAFC; margin: 0 auto; border: 1px solid #CBD5E1; position: relative; }
-  
-  /* BARRA SUPERIOR DEEP SLATE */
-  .titlebar { background: #0F172A; padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #1E293B; }
-  .titlebar-title { color: #F8FAFC; font-size: 14px; font-weight: 600; letter-spacing: 0.5px; }
+ body { 
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+  background: #E2E8F0; 
+  padding: 16px 8px 40px; 
+  min-height: 100vh;
+  position: relative;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 450px;
+  height: 450px;
+  background-image: url('logo.jpeg');
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  opacity: 0.05;
+  pointer-events: none;
+  z-index: 0;
+}
+ /* CONTENEDOR EFECTO ELEVADO PREMIUM */
+.window { width: 100%; max-width: 1080px; border-radius: 12px; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); position: relative; background-color: #ffffff; }
+
+.window::before {
+  content: "";
+  position: absolute;
+  top: 38%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 580px;
+  height: 580px;
+  background-image: url('logo.jpeg');
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  opacity: 0.09;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* BARRA SUPERIOR DEEP SLATE CON LOGO MINI */
+.titlebar { 
+  background: #0F172A; 
+  padding: 10px 18px; 
+  display: flex; 
+  align-items: center; 
+  justify-content: space-between; 
+  position: relative;
+  z-index: 2; 
+}
+
+.titlebar-title { 
+  color: #F8FAFC; 
+  font-size: 14px; 
+  font-weight: 600; 
+  letter-spacing: 0.5px; 
+}
+
+/* Mini logo esquina derecha */
+.titlebar-logo {
+  height: 26px;
+  width: auto;
+  object-fit: contain;
+  border-radius: 4px;
+}
   
   /* PESTAÑAS DISEÑO MODERNO */
   .tabs { display: flex; background: #F1F5F9; padding: 6px 6px 0; border-bottom: 2px solid #E2E8F0; overflow-x: auto; gap: 4px; }
@@ -125,10 +186,13 @@
 <div class="window">
   <div class="inject-banner" id="banner-carga">🔄 Re-inyectando base de operadores en la nube... Esperá un momento...</div>
 
-  <div class="titlebar">
+ <div class="titlebar">
+  <div style="display: flex; align-items: center; gap: 12px;">
     <div class="titlebar-title">🚀 Sistema SoluParts — Red Unificada en la Nube</div>
     <div style="color:#FFF; background:#22C55E; padding:3px 8px; font-size:10px; font-weight:bold; border-radius:4px; box-shadow: 0 0 6px rgba(34,197,94,0.4);">NUBE ACTIVA</div>
   </div>
+  <img src="logo.jpeg" alt="SoluParts" class="titlebar-logo">
+</div>
 
   <div class="tabs">
     <div class="tab active" onclick="switchTab('busqueda')">🔍 MOSTRADOR (BUSCADOR)</div>
@@ -1124,98 +1188,111 @@ async function descargarReporteFechas() {
 
     if(filtrados.length === 0) return alert("No hay datos en este rango.");
 
-    // 1. Crear el libro de trabajo limpio
+    // --- LÓGICA DE AGRUPACIÓN ---
+    const mapaAgrupado = {};
+
+    filtrados.forEach(r => {
+        const oem = String(r.oem || r.codigo || r.codigo_oem || '').trim().toUpperCase();
+        if (!oem) return;
+
+        const sucursalUsuario = r.sucursal || 'Central';
+        const usuarioFirma = r.operador || r.firma || r.cargadoPor || 'Sistema';
+
+        if (!mapaAgrupado[oem]) {
+            mapaAgrupado[oem] = {
+                ...r,
+                oem: oem,
+                cantidadSolicitudes: 1,
+                conteoSucursales: { [sucursalUsuario]: 1 },
+                firmasSet: new Set([usuarioFirma])
+            };
+        } else {
+            mapaAgrupado[oem].cantidadSolicitudes += 1;
+            
+            const conteo = mapaAgrupado[oem].conteoSucursales;
+            conteo[sucursalUsuario] = (conteo[sucursalUsuario] || 0) + 1;
+
+            mapaAgrupado[oem].firmasSet.add(usuarioFirma);
+        }
+    });
+
+    // 1. Crear el libro de trabajo
     const wb = XLSX.utils.book_new();
-    
-    // 2. Armar la matriz de datos con filas de diseño manual para dar estilo ejecutivo
     const rows = [];
-    
-    // Título Principal (Fila 1)
+
+    // Título Principal
     rows.push(["REPORTE DE CONTROL DE CARGAS - SOLUPARTS JAPÓN"]);
-    // Subtítulo (Fila 2)
+    
+    // Subtítulo
     rows.push([`Filtro aplicado: desde ${desde} hasta ${hasta} | Generado el: ${new Date().toLocaleDateString('es-PY')}`]);
-    // Fila vacía de separación (Fila 3)
+    
+    // Fila vacía
     rows.push([]);
-    
-    // Encabezados de la Tabla (Fila 4) - AGREGAMOS "Sucursal" AL FINAL
-    const encabezados = [
-        "OEM (Código)", "Descripción", "Marca", "Vehículo", 
-        "Nro. VIN / Chasis", "Medidas / Tips Técnicos", "Venta", "Firma (Cargado por)", "Sucursal", "Prioridad / Estado"
-    ];
-    rows.push(encabezados);
 
-    // 3. Mapear los repuestos filtrados (A partir de la Fila 5)
-let totalFilasDatos = filtrados.length;
-filtrados.forEach(r => {
-    const med = r.medidas ? `${r.medidas.a || 0}x${r.medidas.b || 0}x${r.medidas.c || 0}` : "";
-    const tipsMedidas = r.tip ? `${med} / ${r.tip}` : med;
-    const precioVenta = r.venta && r.venta > 0 ? parseInt(r.venta) : 0;
-
-    // EVALUAMOS SI VIENE MARCADO PARA REFORZAR
-    const esReforzado = r.reforzar === true;
-    const estadoPrioridad = esReforzado ? "🔥 REFORZAR PEDIDO" : "NORMAL";
-
+    // Encabezados
     rows.push([
-        r.codigo_oem || "S/C",
-        r.descripcion || "-",
-        r.marca_vehiculo || "-",
-        r.vehículo || r.vehiculo || "-",
-        r.vin || "-",
-        tipsMedidas || "-",
-        precioVenta, // Guardamos como número puro para que Excel pueda sumar
-        r.operador || "Sistema",
-        r.sucursal || "-", // <--- AQUI EXTRAEMOS LA SUCURSAL REGISTRADA
-        estadoPrioridad    // <--- AQUI AGREGAMOS LA PRIORIDAD / REFUERZO
+        "OEM (Código)",
+        "Descripción",
+        "Marca",
+        "Vehículo",
+        "Nro. VIN / Chasis",
+        "Medidas / Tips Técnicos",
+        "Venta",
+        "Cant. Solicitudes",
+        "Firma (Cargado por)",
+        "Sucursal",
+        "Prioridad / Estado"
     ]);
-});
 
-    // 4. Agregar la Fila de Totales con Fórmula real de Excel al final
-    const filaInicialDatos = 5;
-    const filaFinalDatos = 4 + totalFilasDatos;
-    const filaTotales = filaFinalDatos + 1;
-    
-    const filaTotalObj = ["", "", "", "", "", "TOTAL VENTAS:"];
-    // Metemos la estructura de fórmula de SheetJS para la celda G (columna 7)
-    filaTotalObj.push({ t: 'n', f: `SUM(G${filaInicialDatos}:G${filaFinalDatos})` }); 
-    filaTotalObj.push("");
-    filaTotalObj.push("");
-    rows.push(filaTotalObj);
+    // Filas agrupadas
+    Object.values(mapaAgrupado).forEach(item => {
+        const textoSucursales = Object.entries(item.conteoSucursales)
+            .map(([suc, cant]) => `${suc} (${cant})`)
+            .join(' - ');
 
-    // 5. Convertir la matriz completa a una hoja de Excel
+        const textoFirmas = Array.from(item.firmasSet).join(', ');
+
+        const estado = item.cantidadSolicitudes > 1 ? '🔥 REFORZAR PEDIDO' : (item.estado || 'NORMAL');
+
+        rows.push([
+            item.oem,
+            item.descripcion || item.desc || '',
+            item.marca || item.marca_vehiculo || '',
+            item.vehiculo || item.vehiculo_modelo || '',
+            item.vin || item.chasis || '-',
+            item.medidas || '0x0x0',
+            item.venta || 0,
+            item.cantidadSolicitudes,
+            textoFirmas,
+            textoSucursales,
+            estado
+        ]);
+    });
+
+    // Generar la hoja a partir de la matriz de filas
     const ws = XLSX.utils.aoa_to_sheet(rows);
 
-    // 6. Aplicar configuraciones de Estructura Avanzada (Mapeos y Filtros)
-    // Combinar el título principal en la fila 1 (De la A a la I -> 9 columnas)
-    ws['!merges'] = [
-        { s: { r: 0, c: 0 }, e: { r: 0, c: 8 } }
-    ];
-
-    // Auto-ajustar el ancho de las columnas dinámicamente según el contenido
-    const colWidths = encabezados.map((h, i) => {
-        let maxLen = h.length;
-        for (let r = 3; r < rows.length; r++) {
-            const val = rows[r][i];
-            if (val) {
-                const strLen = val.toString().length;
-                if (strLen > maxLen) maxLen = strLen;
+    // --- AUTO-AJUSTE INTELIGENTE DE ANCHO DE COLUMNAS ---
+    const colWidths = rows[3].map((header, i) => {
+        let maxLen = header ? header.toString().length : 10;
+        
+        // Medir el largo de los datos de cada columna
+        for (let r = 4; r < rows.length; r++) {
+            const cellValue = rows[r][i];
+            if (cellValue) {
+                const len = cellValue.toString().length;
+                if (len > maxLen) maxLen = len;
             }
         }
-        return { wch: maxLen + 4 }; // Le sumamos un margen de holgura
+        
+        // Sumar margen de holgura (mínimo 12, máximo 60 para evitar celdas gigantes)
+        return { wch: Math.min(Math.max(maxLen + 4, 12), 60) }; 
     });
+
+    // Aplicar los anchos calculados
     ws['!cols'] = colWidths;
 
-    // Formatear la columna de Ventas (G) y la Celda del Total como Moneda de Paraguay
-    for (let i = filaInicialDatos; i <= filaTotales; i++) {
-        const celdaRef = `G${i}`;
-        if (ws[celdaRef]) {
-            ws[celdaRef].z = '"Gs. "#,##0'; // Formato nativo de Excel para Guaraníes
-        }
-    }
-
-    // Activar los filtros automáticos en la fila de encabezados (Fila 4 hasta la columna I)
-    ws['!autofilter'] = { ref: `A4:J${filaFinalDatos}` };
-
-    // 7. Guardar el archivo final refinado
+    // Guardar archivo
     XLSX.utils.book_append_sheet(wb, ws, "Control de Cargas");
     XLSX.writeFile(wb, "Reporte_Cargas_Premium.xlsx");
 }
